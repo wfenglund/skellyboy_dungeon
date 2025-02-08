@@ -166,13 +166,6 @@ def start_game():
                 print('connection')
             print(f'{x},{y}')
 
-        # start testing with ai-wandering:
-#         new_mob_list = []
-#         for mob in mob_list:
-#             mob['coords'] = test_ai.move_mob(mob['coords'][0], mob['coords'][1], mob['coords'][0], mob['coords'][1], one_tile, no_walk_list)
-#             new_mob_list = new_mob_list + [mob]
-#         mob_list = new_mob_list
-
         if str(x) + ',' + str(y) in connection_dict.keys():
             connection_info = connection_dict[str(x) + ',' + str(y)]
             cur_map = connection_info[0].strip()
