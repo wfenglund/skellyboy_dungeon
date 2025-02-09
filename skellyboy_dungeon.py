@@ -28,7 +28,7 @@ def parse_mapinf(map_file, bestiary_dict):
                 loaded_mobs = loaded_mobs + [mob.copy()] # without the copy this updates mob_list as well
     return connection_dict, loaded_mobs
 
-def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon_dmg, no_walk_list):
+def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon, no_walk_list):
     one_tile = 25
 
     if attack_coords != 'undefined': # if player is attacking
@@ -36,14 +36,14 @@ def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon_dmg
         for mob in mob_list:
             if mob['coords'] == attack_coords:
                 mob['status'] = 'attacked'
-                if weapon_dmg < mob['hitpoints']:
-                    mob['damage'] = weapon_dmg
+                if weapon['dmg'] < mob['hitpoints']:
+                    mob['damage'] = weapon['dmg']
                 else:
                     mob['damage'] = mob['hitpoints']
-                mob['hitpoints'] = mob['hitpoints'] - weapon_dmg
+                mob['hitpoints'] = mob['hitpoints'] - weapon['dmg']
 
                 # make mobs bounce back from being hit but not into walls:
-                bounce_back = 2
+                bounce_back = weapon['bounce']
                 old_x, old_y = mob['coords']
                 x_bounce, y_bounce = [0, 0]
                 while bounce_back > 0:
@@ -112,7 +112,10 @@ def start_game():
     prev_y = y
     cur_map = 'map1' # prefix name of the starting map
     old_map = ''
-    weapon_dmg = 2 # assign how much damage attacking does does
+    attack_coords = 'undefined'
+
+    weapon = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2}
+    weapon = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0}
 
     # Initiate mob variables:
     mob_list = []
@@ -219,33 +222,50 @@ def start_game():
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
 
-        attack_coords = 'undefined'
-        if keys[pygame.K_SPACE]:
-            sword_test = pygame.image.load('./images/' + 'test_sword.png').convert_alpha() # load image
+        if keys[pygame.K_SPACE] and attack_coords == 'undefined':
+            if weapon['type'] == 'melee':
+                weapon_image = pygame.image.load('./images/' + 'test_sword.png').convert_alpha() # load image
+            if weapon['type'] == 'projectile':
+                weapon_image = pygame.image.load('./images/' + 'basic_arrow.png').convert_alpha() # load image
+
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 attack_coords = [x, y - one_tile]
-#                 projectile_coords = [x, y - one_tile]
+                direction = 'up'
                 print('attack up')
             elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
                 attack_coords = [x, y + one_tile]
-                sword_test = pygame.transform.rotate(sword_test, 180) # rotate sword downwards
+                weapon_image = pygame.transform.rotate(weapon_image, 180) # rotate sword downwards
+                direction = 'down'
                 print('attack down')
             elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 attack_coords = [x - one_tile, y]
-                sword_test = pygame.transform.rotate(sword_test, 90) # rotate sword to the left
+                weapon_image = pygame.transform.rotate(weapon_image, 90) # rotate sword to the left
+                direction = 'left'
                 print('attack left')
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 attack_coords = [x + one_tile, y]
-                sword_test = pygame.transform.rotate(sword_test, 270) # rotate sword to the right
+                weapon_image = pygame.transform.rotate(weapon_image, 270) # rotate sword to the right
+                direction = 'right'
                 print('attack right')
         
-        mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon_dmg, no_walk_list)
+        mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon, no_walk_list)
         
         if attack_coords != 'undefined':
-            game_window.blit(sword_test, (attack_coords[0], attack_coords[1]))
-#         if 'projectile_coords' in locals():
-#             game_window.blit(sword_test, (projectile_coords[0], projectile_coords[1]))
-#             projectile_coords[1] = projectile_coords[1] - one_tile
+            if weapon['type'] == 'melee':
+                game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
+                attack_coords = 'undefined'
+            elif weapon['type'] == 'projectile':
+                game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
+                if direction == 'up':
+                    attack_coords[1] = attack_coords[1] - one_tile
+                elif direction == 'down':
+                    attack_coords[1] = attack_coords[1] + one_tile
+                elif direction == 'left':
+                    attack_coords[0] = attack_coords[0] - one_tile
+                elif direction == 'right':
+                    attack_coords[0] = attack_coords[0] + one_tile
+                if attack_coords[0] < 0 or attack_coords[0] > 500 or attack_coords[1] < 0 or attack_coords[1] > 500:
+                    attack_coords = 'undefined'
 
         pygame.display.update() # update screen
         
