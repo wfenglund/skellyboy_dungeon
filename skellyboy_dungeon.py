@@ -114,8 +114,8 @@ def start_game():
     old_map = ''
     attack_coords = 'undefined'
 
-    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2}
-    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0}
+    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2, 'image': 'test_sword.png'}
+    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0, 'image': 'basic_arrow.png'}
     weapon_list = [weapon1, weapon2]
     weapon = weapon_list[0]
 
@@ -225,10 +225,7 @@ def start_game():
         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
 
         if keys[pygame.K_SPACE] and attack_coords == 'undefined':
-            if weapon['type'] == 'melee':
-                weapon_image = pygame.image.load('./images/' + 'test_sword.png').convert_alpha() # load image
-            if weapon['type'] == 'projectile':
-                weapon_image = pygame.image.load('./images/' + 'basic_arrow.png').convert_alpha() # load image
+            weapon_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 attack_coords = [x, y - one_tile]
