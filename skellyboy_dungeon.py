@@ -114,8 +114,10 @@ def start_game():
     old_map = ''
     attack_coords = 'undefined'
 
-    weapon = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2}
-    weapon = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0}
+    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2}
+    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0}
+    weapon_list = [weapon1, weapon2]
+    weapon = weapon_list[0]
 
     # Initiate mob variables:
     mob_list = []
@@ -266,6 +268,10 @@ def start_game():
                     attack_coords[0] = attack_coords[0] + one_tile
                 if attack_coords[0] < 0 or attack_coords[0] > 500 or attack_coords[1] < 0 or attack_coords[1] > 500:
                     attack_coords = 'undefined'
+
+        if keys[pygame.K_q]:
+            weapon_list = weapon_list[1:] + [weapon_list[0]]
+            weapon = weapon_list[0]
 
         pygame.display.update() # update screen
         
