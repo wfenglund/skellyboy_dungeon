@@ -115,6 +115,7 @@ def start_game():
     attack_coords = 'undefined'
     weapon_delayer = 1
     change_weapon = 'no'
+    cooldown = 'off'
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -226,28 +227,35 @@ def start_game():
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
 
-        if keys[pygame.K_SPACE] and attack_coords == 'undefined':
+        if (keys[pygame.K_SPACE] and attack_coords == 'undefined') and cooldown == 'off':
             weapon_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 attack_coords = [x, y - one_tile]
                 direction = 'up'
+                cooldown = 'on'
                 print('attack up')
             elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
                 attack_coords = [x, y + one_tile]
                 weapon_image = pygame.transform.rotate(weapon_image, 180) # rotate sword downwards
                 direction = 'down'
+                cooldown = 'on'
                 print('attack down')
             elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 attack_coords = [x - one_tile, y]
                 weapon_image = pygame.transform.rotate(weapon_image, 90) # rotate sword to the left
                 direction = 'left'
+                cooldown = 'on'
                 print('attack left')
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 attack_coords = [x + one_tile, y]
                 weapon_image = pygame.transform.rotate(weapon_image, 270) # rotate sword to the right
                 direction = 'right'
+                cooldown = 'on'
                 print('attack right')
+        
+        if weapon_delayer == 1:
+            cooldown = 'off'
         
         mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon, no_walk_list)
         
