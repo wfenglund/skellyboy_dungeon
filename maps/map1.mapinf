@@ -1,2 +1,4 @@
 connection:225,-25=map2:225,475
 connection:250,-25=map2:250,475
+mob:skeleton=125,125
+mob:skeleton=150,150

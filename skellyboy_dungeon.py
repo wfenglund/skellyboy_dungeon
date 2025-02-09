@@ -10,15 +10,23 @@ def translate_map_char(map_file, character): # Get all coordinates of a characte
             row = row + 1
         return map_list
 
-def parse_mapinf(map_file):
+def parse_mapinf(map_file, bestiary_dict):
     connection_dict = {}
+    loaded_mobs = []
     with open(map_file) as map_info:
         for line in map_info:
             if line.startswith('connection:'):
                 raw_connection = line.strip().replace('connection:', '')
                 coords, new_loc = raw_connection.split('=')
                 connection_dict[coords] = new_loc.split(':')
-    return connection_dict
+            if line.startswith('mob:'):
+                raw_mob = line.strip().replace('mob:', '')
+                mob_name, mob_coords = raw_mob.split('=')
+                mob = bestiary_dict[mob_name]
+                coords_list = mob_coords.split(',')
+                mob['coords'] = [int(coords_list[0]), int(coords_list[1])]
+                loaded_mobs = loaded_mobs + [mob.copy()] # without the copy this updates mob_list as well
+    return connection_dict, loaded_mobs
 
 def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon_dmg, no_walk_list):
     one_tile = 25
@@ -52,16 +60,16 @@ def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon_dmg
         # draw mob:
 #         pygame.draw.rect(game_window, (255, 255, 255), (mob['coords'][0], mob['coords'][1], one_tile, one_tile))
         if mob['facing'] == 'left':
-            skellyboy_test = pygame.image.load('./images/' + 'skeleton_left.png').convert_alpha() # load image
+            mob_image = pygame.image.load('./images/' + mob['left_img']).convert_alpha() # load image
         elif mob['facing'] == 'right':
-            skellyboy_test = pygame.image.load('./images/' + 'skeleton_right.png').convert_alpha() # load image
+            mob_image = pygame.image.load('./images/' + mob['right_img']).convert_alpha() # load image
         elif mob['facing'] == 'back':
-            skellyboy_test = pygame.image.load('./images/' + 'skeleton_back.png').convert_alpha() # load image
+            mob_image = pygame.image.load('./images/' + mob['back_img']).convert_alpha() # load image
         elif mob['facing'] == 'front':
-            skellyboy_test = pygame.image.load('./images/' + 'skeleton_front.png').convert_alpha() # load image
+            mob_image = pygame.image.load('./images/' + mob['front_img']).convert_alpha() # load image
         else:
-            skellyboy_test = pygame.image.load('./images/' + 'skeleton_front.png').convert_alpha() # load image
-        game_window.blit(skellyboy_test, (mob['coords'][0], mob['coords'][1]))
+            mob_image = pygame.image.load('./images/' + mob['front_img']).convert_alpha() # load image
+        game_window.blit(mob_image, (mob['coords'][0], mob['coords'][1])) # draw image
         
         # add hitpoints bar:
         pygame.draw.rect(game_window, (255, 0, 0), (mob['coords'][0], mob['coords'][1], one_tile, one_tile / 10))
@@ -103,21 +111,18 @@ def start_game():
     prev_x = x
     prev_y = y
     cur_map = 'map1' # prefix name of the starting map
+    old_map = ''
     weapon_dmg = 2 # assign how much damage attacking does does
 
-    # Mob list:
-    mob1 = {}
-    mob1['coords'] = [125, 125]
-    mob1['max_hp'] = 5
-    mob1['hitpoints'] = mob1['max_hp']
-    mob1['status'] = 'normal'
-    mob2 = {}
-    mob2['coords'] = [150, 150]
-    mob2['max_hp'] = 5
-    mob2['hitpoints'] = mob2['max_hp']
-    mob2['status'] = 'normal'
-    mob_list = [mob1, mob2]
+    # Initiate mob variables:
+    mob_list = []
     mob_delayer = 1
+
+    bestiary_dict = {}
+    with open("bestiary.data") as mobs:
+        for row in mobs:
+            mob2 = eval(row.strip())
+            bestiary_dict[mob2['name']] = mob2
 
     # Start game loop:
     while run:
@@ -127,10 +132,15 @@ def start_game():
             if event.type == pygame.QUIT: # check if game window gets closed
                 run = False  # end game loop
                 print('Game Closed')
-
+        
+        # Parse map information:
+        connection_dict, loaded_mobs = parse_mapinf('./maps/' + cur_map + '.mapinf', bestiary_dict)
+        if old_map != cur_map: # if entering a new map
+            mob_list = loaded_mobs # update mobs
+        old_map = cur_map
+        
         no_walk_list = translate_map_char('./maps/' + cur_map + '.maplay', '#') # find unwalkable tiles
         no_walk_list = no_walk_list + [i['coords'] for i in mob_list]
-        connection_dict = parse_mapinf('./maps/' + cur_map + '.mapinf')
 
         keys = pygame.key.get_pressed()
         
@@ -169,9 +179,9 @@ def start_game():
         if str(x) + ',' + str(y) in connection_dict.keys():
             connection_info = connection_dict[str(x) + ',' + str(y)]
             cur_map = connection_info[0].strip()
-            coord_list = connection_info[1].split(',')
-            x = int(coord_list[0].strip())
-            y = int(coord_list[1].strip())
+            coords_list = connection_info[1].split(',')
+            x = int(coords_list[0].strip())
+            y = int(coords_list[1].strip())
         
         if mob_delayer == 1: # make this whole indentation into a function
             new_mob_list = []
@@ -227,7 +237,7 @@ def start_game():
                 attack_coords = [x + one_tile, y]
                 sword_test = pygame.transform.rotate(sword_test, 270) # rotate sword to the right
                 print('attack right')
-
+        
         mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon_dmg, no_walk_list)
         
         if attack_coords != 'undefined':
