@@ -124,8 +124,8 @@ def start_game():
     bestiary_dict = {}
     with open("bestiary.data") as mobs:
         for row in mobs:
-            mob2 = eval(row.strip())
-            bestiary_dict[mob2['name']] = mob2
+            mob = eval(row.strip())
+            bestiary_dict[mob['name']] = mob
 
     # Start game loop:
     while run:
@@ -269,7 +269,7 @@ def start_game():
 
         pygame.display.update() # update screen
         
-        # store current x and as previous x and y:
+        # store current x and y as previous x and y:
         prev_x = x
         prev_y = y
         
