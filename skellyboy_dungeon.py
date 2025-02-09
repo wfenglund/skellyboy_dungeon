@@ -224,6 +224,7 @@ def start_game():
             sword_test = pygame.image.load('./images/' + 'test_sword.png').convert_alpha() # load image
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 attack_coords = [x, y - one_tile]
+#                 projectile_coords = [x, y - one_tile]
                 print('attack up')
             elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
                 attack_coords = [x, y + one_tile]
@@ -242,6 +243,9 @@ def start_game():
         
         if attack_coords != 'undefined':
             game_window.blit(sword_test, (attack_coords[0], attack_coords[1]))
+#         if 'projectile_coords' in locals():
+#             game_window.blit(sword_test, (projectile_coords[0], projectile_coords[1]))
+#             projectile_coords[1] = projectile_coords[1] - one_tile
 
         pygame.display.update() # update screen
         
