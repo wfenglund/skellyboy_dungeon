@@ -113,6 +113,8 @@ def start_game():
     cur_map = 'map1' # prefix name of the starting map
     old_map = ''
     attack_coords = 'undefined'
+    weapon_delayer = 1
+    change_weapon = 'no'
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -250,11 +252,10 @@ def start_game():
         mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon, no_walk_list)
         
         if attack_coords != 'undefined':
+            game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
             if weapon['type'] == 'melee':
-                game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
                 attack_coords = 'undefined'
             elif weapon['type'] == 'projectile':
-                game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
                 if direction == 'up':
                     attack_coords[1] = attack_coords[1] - one_tile
                 elif direction == 'down':
@@ -266,9 +267,19 @@ def start_game():
                 if attack_coords[0] < 0 or attack_coords[0] > 500 or attack_coords[1] < 0 or attack_coords[1] > 500:
                     attack_coords = 'undefined'
 
-        if keys[pygame.K_q]:
-            weapon_list = weapon_list[1:] + [weapon_list[0]]
-            weapon = weapon_list[0]
+        if keys[pygame.K_q] or change_weapon == 'yes':
+            change_weapon = 'yes'
+            if change_weapon == 'yes' and weapon_delayer == 1:
+                weapon_list = weapon_list[1:] + [weapon_list[0]]
+                weapon = weapon_list[0]
+                change_weapon = 'no'
+        
+        weapon_delayer = weapon_delayer + 1
+        if weapon_delayer > 5:
+            weapon_delayer = 1
+
+        weapon_display_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load current weapon image
+        game_window.blit(weapon_display_image, (0, 475))
 
         pygame.display.update() # update screen
         
