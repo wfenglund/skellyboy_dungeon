@@ -117,8 +117,8 @@ def start_game():
     change_weapon = 'no'
     cooldown = 'off'
 
-    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 2, 'bounce': 2, 'image': 'test_sword.png'}
-    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 0, 'image': 'basic_arrow.png'}
+    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
+    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
     weapon_list = [weapon1, weapon2]
     weapon = weapon_list[0]
 
@@ -196,27 +196,57 @@ def start_game():
             for mob in mob_list:
                 mob_x = mob['coords'][0]
                 mob_y = mob['coords'][1]
+                full_x = mob_x
+                full_y = mob_y
                 x_diff = mob_x - x
                 y_diff = mob_y - y
-                if x_diff > 0:
-                    mob_x = mob_x - one_tile
-                    mob['facing'] = 'left'
-                elif x_diff < 0:
-                    mob_x = mob_x + one_tile
-                    mob['facing'] = 'right'
-                if y_diff > 0:
-                    mob_y = mob_y - one_tile
-                    mob['facing'] = 'back'
-                elif y_diff < 0:
-                    mob_y = mob_y + one_tile
-                    mob['facing'] = 'front'
-                if [mob_x, mob_y] != [x, y] and [mob_x, mob_y] not in no_walk_list:
-                    if mob['coords'] in no_walk_list:
-                        no_walk_list.pop(no_walk_list.index(mob['coords']))
-                    mob['coords'] = [mob_x, mob_y]
-                    no_walk_list = no_walk_list + [mob['coords']]
+                if mob['x_movement'] == 'none' and mob['y_movement'] == 'none':
+                    if x_diff > 0:
+                        full_x = mob_x - one_tile
+                        mob_x = mob_x - (one_tile / 2)
+                        mob['x_movement'] = 'x_minus'
+                        mob['facing'] = 'left'
+                    elif x_diff < 0:
+                        full_x = mob_x + one_tile
+                        mob_x = mob_x + (one_tile / 2)
+                        mob['x_movement'] = 'x_plus'
+                        mob['facing'] = 'right'
+                    if y_diff > 0:
+                        full_y = mob_y - one_tile
+                        mob_y = mob_y - (one_tile / 2)
+                        mob['y_movement'] = 'y_minus'
+                        mob['facing'] = 'back'
+                    elif y_diff < 0:
+                        full_y = mob_y + one_tile
+                        mob_y = mob_y + (one_tile / 2)
+                        mob['y_movement'] = 'y_plus'
+                        mob['facing'] = 'front'
+                    if [full_x, full_y] != [x, y] and [full_x, full_y] not in no_walk_list:
+                        if mob['coords'] in no_walk_list:
+                            no_walk_list.pop(no_walk_list.index(mob['coords']))
+                        mob['coords'] = [mob_x, mob_y]
+                        no_walk_list = no_walk_list + [[full_x, full_y]]
+                    else:
+                        mob['x_movement'] = 'none'
+                        mob['y_movement'] = 'none'
                 new_mob_list = new_mob_list + [mob]
             mob_list = new_mob_list
+        else:
+            new_mob_list = []
+            for mob in mob_list:
+                if mob['x_movement'] == 'x_plus':
+                    mob['coords'][0] = mob['coords'][0] + (one_tile / 2)
+                elif mob['x_movement'] == 'x_minus':
+                    mob['coords'][0] = mob['coords'][0] - (one_tile / 2)
+                if mob['y_movement'] == 'y_plus':
+                    mob['coords'][1] = mob['coords'][1] + (one_tile / 2)
+                elif mob['y_movement'] == 'y_minus':
+                    mob['coords'][1] = mob['coords'][1] - (one_tile / 2)
+                mob['x_movement'] = 'none'
+                mob['y_movement'] = 'none'
+                new_mob_list = new_mob_list + [mob]
+            mob_list = new_mob_list
+#         print(mob_list[0]['movement'])
             
         mob_delayer = mob_delayer + 1
         if mob_delayer > 3:
