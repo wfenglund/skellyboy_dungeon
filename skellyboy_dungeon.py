@@ -201,7 +201,7 @@ def start_game():
                 full_y = mob_y
                 x_diff = mob_x - x
                 y_diff = mob_y - y
-                if (x_diff < (-6 * one_tile) or x_diff > (6 * one_tile) or y_diff < (-6 * one_tile) or y_diff > (6 * one_tile)) and mob['aggro'] == 'no':
+                if (x_diff < (-4 * one_tile) or x_diff > (4 * one_tile) or y_diff < (-4 * one_tile) or y_diff > (4 * one_tile)) and mob['aggro'] == 'no':
                     x_diff = 0
                     y_diff = 0
                 else:
