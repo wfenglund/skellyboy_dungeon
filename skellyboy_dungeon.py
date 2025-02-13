@@ -305,10 +305,21 @@ def start_game():
                 new_attack = {}
                 new_attack['weapon'] = weapon1
                 new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
-                if y_diff < 0:
+                if y_diff > 0:
+                    new_attack['coords'] = [mob_x, mob_y - one_tile]
+                    new_attack['direction'] = 'up'
+                elif y_diff < 0:
                     new_attack['coords'] = [mob_x, mob_y + one_tile]
                     new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 180) # rotate weapon downwards
                     new_attack['direction'] = 'down'
+                elif x_diff > 0:
+                    new_attack['coords'] = [mob_x - one_tile, mob_y]
+                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 90) # rotate weapon downwards
+                    new_attack['direction'] = 'left'
+                elif x_diff < 0:
+                    new_attack['coords'] = [mob_x + one_tile, mob_y]
+                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 270) # rotate weapon downwards
+                    new_attack['direction'] = 'right'
                 if 'coords' in new_attack.keys(): # if an attack was made
                     mob['cooldown'] = 8
                     new_attack['age'] = 'new'
