@@ -89,23 +89,23 @@ def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
             new_mob_list = new_mob_list + [mob]
     return new_mob_list, no_walk_list
 
-def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon, no_walk_list):
+def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list):
     one_tile = 25
 
-    if attack_coords != 'undefined': # if player is attacking
+    for cur_attack in attack_list: # for every attack
         new_mob_list = []
         for mob in mob_list:
-            if mob['coords'] == attack_coords:
+            if mob['coords'] == cur_attack['coords']:
                 mob['status'] = 'attacked'
                 mob['aggro'] = 'yes'
-                if weapon['dmg'] < mob['hitpoints']:
-                    mob['damage'] = weapon['dmg']
+                if cur_attack['weapon']['dmg'] < mob['hitpoints']:
+                    mob['damage'] = cur_attack['weapon']['dmg']
                 else:
                     mob['damage'] = mob['hitpoints']
-                mob['hitpoints'] = mob['hitpoints'] - weapon['dmg']
+                mob['hitpoints'] = mob['hitpoints'] - cur_attack['weapon']['dmg']
 
                 # make mobs bounce back from being hit but not into walls:
-                bounce_back = weapon['bounce']
+                bounce_back = cur_attack['weapon']['bounce']
                 old_x, old_y = mob['coords']
                 x_bounce, y_bounce = [0, 0]
                 while bounce_back > 0:
@@ -174,10 +174,11 @@ def start_game():
     prev_y = y
     cur_map = 'map1' # prefix name of the starting map
     old_map = ''
-    attack_coords = 'undefined'
+#     attack_coords = 'undefined'
+    attack_list = []
     weapon_delayer = 1
     change_weapon = 'no'
-    cooldown = 'off'
+    cooldown = 0
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -264,64 +265,75 @@ def start_game():
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
 
-        if (keys[pygame.K_SPACE] and attack_coords == 'undefined') and cooldown == 'off':
-            weapon_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
+        if keys[pygame.K_SPACE] and cooldown == 0:
+            player_attack = {}
+            player_attack['weapon'] = weapon
+            player_attack['weapon_image'] = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
-                attack_coords = [x, y - one_tile]
-                direction = 'up'
-                cooldown = 'on'
+                player_attack['coords'] = [x, y - one_tile]
+                player_attack['direction'] = 'up'
                 print('attack up')
             elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-                attack_coords = [x, y + one_tile]
-                weapon_image = pygame.transform.rotate(weapon_image, 180) # rotate sword downwards
-                direction = 'down'
-                cooldown = 'on'
+                player_attack['coords'] = [x, y + one_tile]
+                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 180) # rotate weapon downwards
+                player_attack['direction'] = 'down'
                 print('attack down')
             elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                attack_coords = [x - one_tile, y]
-                weapon_image = pygame.transform.rotate(weapon_image, 90) # rotate sword to the left
-                direction = 'left'
-                cooldown = 'on'
+                player_attack['coords'] = [x - one_tile, y]
+                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 90) # rotate weapon to the left
+                player_attack['direction'] = 'left'
                 print('attack left')
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                attack_coords = [x + one_tile, y]
-                weapon_image = pygame.transform.rotate(weapon_image, 270) # rotate sword to the right
-                direction = 'right'
-                cooldown = 'on'
+                player_attack['coords'] = [x + one_tile, y]
+                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 270) # rotate weapon to the right
+                player_attack['direction'] = 'right'
                 print('attack right')
+            if 'coords' in player_attack.keys(): # if an attack was made
+                player_attack['age'] = 'new'
+                cooldown = 8
+                attack_list = attack_list + [player_attack]
         
-        if weapon_delayer == 1:
-            cooldown = 'off'
+        for mob in mob_list: # determine mob attacks
+            weapon_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
+#             if mob['aggro']:
         
-        mob_list = maintain_mob(game_window, mob_list, [x, y], attack_coords, weapon, no_walk_list)
-        
-        if attack_coords != 'undefined':
-            game_window.blit(weapon_image, (attack_coords[0], attack_coords[1]))
-            if weapon['type'] == 'melee':
-                attack_coords = 'undefined'
-            elif weapon['type'] == 'projectile':
-                if direction == 'up':
+        new_attack_list = []
+        for cur_attack in attack_list:
+            attack_coords = cur_attack['coords']
+            game_window.blit(cur_attack['weapon_image'], (attack_coords[0], attack_coords[1]))
+            if cur_attack['weapon']['type'] == 'projectile' and cur_attack['age'] == 'old':
+                if cur_attack['direction'] == 'up':
                     attack_coords[1] = attack_coords[1] - one_tile
-                elif direction == 'down':
+                elif cur_attack['direction'] == 'down':
                     attack_coords[1] = attack_coords[1] + one_tile
-                elif direction == 'left':
+                elif cur_attack['direction'] == 'left':
                     attack_coords[0] = attack_coords[0] - one_tile
-                elif direction == 'right':
+                elif cur_attack['direction'] == 'right':
                     attack_coords[0] = attack_coords[0] + one_tile
-                if attack_coords[0] < 0 or attack_coords[0] > 500 or attack_coords[1] < 0 or attack_coords[1] > 500:
-                    attack_coords = 'undefined'
+                if attack_coords[0] > 0 and attack_coords[0] < 500 and attack_coords[1] > 0 and attack_coords[1] < 500:
+                    cur_attack['coords'] = attack_coords
+                    new_attack_list = new_attack_list + [cur_attack]
+            elif cur_attack['age'] == 'new': # if attack was initiated this cycle
+                cur_attack['age'] = 'old'
+                new_attack_list = new_attack_list + [cur_attack]
+        attack_list = new_attack_list
+        
+        mob_list = maintain_mob(game_window, mob_list, [x, y], attack_list, no_walk_list)
 
         if keys[pygame.K_q] or change_weapon == 'yes':
-            change_weapon = 'yes'
-            if change_weapon == 'yes' and weapon_delayer == 1:
+            if weapon_delayer < 6:
+                change_weapon = 'yes'
+            if change_weapon == 'yes' and weapon_delayer == 0:
                 weapon_list = weapon_list[1:] + [weapon_list[0]]
                 weapon = weapon_list[0]
                 change_weapon = 'no'
+                weapon_delayer = 8
         
-        weapon_delayer = weapon_delayer + 1
-        if weapon_delayer > 5:
-            weapon_delayer = 1
+        if cooldown > 0:
+            cooldown = cooldown - 1
+        if weapon_delayer > 0:
+            weapon_delayer = weapon_delayer - 1
 
         weapon_display_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load current weapon image
         game_window.blit(weapon_display_image, (0, 475))
