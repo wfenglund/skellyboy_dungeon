@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 
 def translate_map_char(map_file, character): # Get all coordinates of a character in a map file
     with open(map_file) as raw_map:
@@ -205,8 +206,8 @@ def start_game():
                 x_diff_tiles = math.sqrt(x_diff * x_diff)
                 y_diff_tiles = math.sqrt(y_diff * y_diff)
                 if (x_diff_tiles > (4 * one_tile) or y_diff_tiles > (4 * one_tile)) and mob['aggro'] == 'no':
-                    x_diff = 0
-                    y_diff = 0
+                    x_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+                    y_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
                 else:
                     mob['aggro'] = 'yes'
                 if mob['x_movement'] == 'none' and mob['y_movement'] == 'none':
