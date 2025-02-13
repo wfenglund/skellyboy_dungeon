@@ -30,6 +30,65 @@ def parse_mapinf(map_file, bestiary_dict):
                 loaded_mobs = loaded_mobs + [mob.copy()] # without the copy this updates mob_list as well
     return connection_dict, loaded_mobs
 
+def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
+    one_tile = 25
+    new_mob_list = []
+    if mob_delayer == 1: # if mob is allowed to map out new directions
+        for mob in mob_list:
+            full_x = mob_x = mob['coords'][0]
+            full_y = mob_y = mob['coords'][1]
+            x_diff = mob_x - player_coords[0]
+            y_diff = mob_y - player_coords[1]
+            x_diff_tiles = math.sqrt(x_diff * x_diff)
+            y_diff_tiles = math.sqrt(y_diff * y_diff)
+            if (x_diff_tiles > (4 * one_tile) or y_diff_tiles > (4 * one_tile)) and mob['aggro'] == 'no':
+                x_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+                y_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+            else:
+                mob['aggro'] = 'yes'
+            if mob['x_movement'] == 'none' and mob['y_movement'] == 'none':
+                if x_diff > 0:
+                    full_x = mob_x - one_tile
+                    mob_x = mob_x - (one_tile / 2)
+                    mob['x_movement'] = 'x_minus'
+                    mob['facing'] = 'left'
+                elif x_diff < 0:
+                    full_x = mob_x + one_tile
+                    mob_x = mob_x + (one_tile / 2)
+                    mob['x_movement'] = 'x_plus'
+                    mob['facing'] = 'right'
+                if y_diff > 0:
+                    full_y = mob_y - one_tile
+                    mob_y = mob_y - (one_tile / 2)
+                    mob['y_movement'] = 'y_minus'
+                    mob['facing'] = 'back'
+                elif y_diff < 0:
+                    full_y = mob_y + one_tile
+                    mob_y = mob_y + (one_tile / 2)
+                    mob['y_movement'] = 'y_plus'
+                    mob['facing'] = 'front'
+                if [full_x, full_y] != [player_coords[0], player_coords[1]] and [full_x, full_y] not in no_walk_list:
+                    if mob['coords'] in no_walk_list:
+                        no_walk_list.pop(no_walk_list.index(mob['coords']))
+                    mob['coords'] = [mob_x, mob_y]
+                    no_walk_list = no_walk_list + [[full_x, full_y]]
+                else:
+                    mob['x_movement'] = mob['y_movement'] = 'none'
+            new_mob_list = new_mob_list + [mob]
+    else: # if only old directions are to be finished this game cycle
+        for mob in mob_list:
+            if mob['x_movement'] == 'x_plus':
+                mob['coords'][0] = mob['coords'][0] + (one_tile / 2)
+            elif mob['x_movement'] == 'x_minus':
+                mob['coords'][0] = mob['coords'][0] - (one_tile / 2)
+            if mob['y_movement'] == 'y_plus':
+                mob['coords'][1] = mob['coords'][1] + (one_tile / 2)
+            elif mob['y_movement'] == 'y_minus':
+                mob['coords'][1] = mob['coords'][1] - (one_tile / 2)
+            mob['x_movement'] = mob['y_movement'] = 'none'
+            new_mob_list = new_mob_list + [mob]
+    return new_mob_list, no_walk_list
+
 def maintain_mob(game_window, mob_list, player_coords, attack_coords, weapon, no_walk_list):
     one_tile = 25
 
@@ -194,70 +253,8 @@ def start_game():
             x = int(coords_list[0].strip())
             y = int(coords_list[1].strip())
         
-        if mob_delayer == 1: # make this whole indentation into a function
-            new_mob_list = []
-            for mob in mob_list:
-                mob_x = mob['coords'][0]
-                mob_y = mob['coords'][1]
-                full_x = mob_x
-                full_y = mob_y
-                x_diff = mob_x - x
-                y_diff = mob_y - y
-                x_diff_tiles = math.sqrt(x_diff * x_diff)
-                y_diff_tiles = math.sqrt(y_diff * y_diff)
-                if (x_diff_tiles > (4 * one_tile) or y_diff_tiles > (4 * one_tile)) and mob['aggro'] == 'no':
-                    x_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
-                    y_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
-                else:
-                    mob['aggro'] = 'yes'
-                if mob['x_movement'] == 'none' and mob['y_movement'] == 'none':
-                    if x_diff > 0:
-                        full_x = mob_x - one_tile
-                        mob_x = mob_x - (one_tile / 2)
-                        mob['x_movement'] = 'x_minus'
-                        mob['facing'] = 'left'
-                    elif x_diff < 0:
-                        full_x = mob_x + one_tile
-                        mob_x = mob_x + (one_tile / 2)
-                        mob['x_movement'] = 'x_plus'
-                        mob['facing'] = 'right'
-                    if y_diff > 0:
-                        full_y = mob_y - one_tile
-                        mob_y = mob_y - (one_tile / 2)
-                        mob['y_movement'] = 'y_minus'
-                        mob['facing'] = 'back'
-                    elif y_diff < 0:
-                        full_y = mob_y + one_tile
-                        mob_y = mob_y + (one_tile / 2)
-                        mob['y_movement'] = 'y_plus'
-                        mob['facing'] = 'front'
-                    if [full_x, full_y] != [x, y] and [full_x, full_y] not in no_walk_list:
-                        if mob['coords'] in no_walk_list:
-                            no_walk_list.pop(no_walk_list.index(mob['coords']))
-                        mob['coords'] = [mob_x, mob_y]
-                        no_walk_list = no_walk_list + [[full_x, full_y]]
-                    else:
-                        mob['x_movement'] = 'none'
-                        mob['y_movement'] = 'none'
-                new_mob_list = new_mob_list + [mob]
-            mob_list = new_mob_list
-        else:
-            new_mob_list = []
-            for mob in mob_list:
-                if mob['x_movement'] == 'x_plus':
-                    mob['coords'][0] = mob['coords'][0] + (one_tile / 2)
-                elif mob['x_movement'] == 'x_minus':
-                    mob['coords'][0] = mob['coords'][0] - (one_tile / 2)
-                if mob['y_movement'] == 'y_plus':
-                    mob['coords'][1] = mob['coords'][1] + (one_tile / 2)
-                elif mob['y_movement'] == 'y_minus':
-                    mob['coords'][1] = mob['coords'][1] - (one_tile / 2)
-                mob['x_movement'] = 'none'
-                mob['y_movement'] = 'none'
-                new_mob_list = new_mob_list + [mob]
-            mob_list = new_mob_list
-#         print(mob_list[0]['movement'])
-            
+        mob_list, no_walk_list = walk_mobs(mob_list, [x, y], no_walk_list, mob_delayer) # determine if mobs are walking this game cycle and update no walk list
+
         mob_delayer = mob_delayer + 1
         if mob_delayer > 3:
             mob_delayer = 1
