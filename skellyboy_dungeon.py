@@ -95,7 +95,7 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
     for cur_attack in attack_list: # for every attack
         new_mob_list = []
         for mob in mob_list:
-            if mob['coords'] == cur_attack['coords']:
+            if mob['coords'] == cur_attack['coords'] and cur_attack['attacker'] == 'player':
                 mob['status'] = 'attacked'
                 mob['aggro'] = 'yes'
                 if cur_attack['weapon']['dmg'] < mob['hitpoints']:
@@ -144,6 +144,8 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
 #             pygame.draw.rect(game_window, (255, 0, 0), (mob['coords'][0], mob['coords'][1], one_tile, one_tile))
             mob['status'] = 'normal'
         if mob['hitpoints'] > 0:
+            if mob['cooldown'] > 0:
+                mob['cooldown'] = mob['cooldown'] - 1
             new_mob_list = new_mob_list + [mob]
     return new_mob_list
         
@@ -291,12 +293,27 @@ def start_game():
                 print('attack right')
             if 'coords' in player_attack.keys(): # if an attack was made
                 player_attack['age'] = 'new'
+                player_attack['attacker'] = 'player'
                 cooldown = 8
                 attack_list = attack_list + [player_attack]
         
         for mob in mob_list: # determine mob attacks
-            weapon_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
-#             if mob['aggro']:
+            if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
+                mob_x, mob_y = mob['coords']
+                x_diff = mob_x - x
+                y_diff = mob_y - y
+                new_attack = {}
+                new_attack['weapon'] = weapon1
+                new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
+                if y_diff < 0:
+                    new_attack['coords'] = [mob_x, mob_y + one_tile]
+                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 180) # rotate weapon downwards
+                    new_attack['direction'] = 'down'
+                if 'coords' in new_attack.keys(): # if an attack was made
+                    mob['cooldown'] = 8
+                    new_attack['age'] = 'new'
+                    new_attack['attacker'] = 'mob'
+                    attack_list = attack_list + [new_attack]
         
         new_attack_list = []
         for cur_attack in attack_list:
