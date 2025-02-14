@@ -168,19 +168,22 @@ def start_game():
     pygame.font.init()
 
     # Assign variables:
-    x = 250 # starting x coordinate
-    y = 475 # starting y coordinate
+    starting_x = 250 # starting x coordinate
+    starting_y = 475 # starting y coordinate
+    x = starting_x
+    y = starting_y
     one_tile = 25 # determine fundamental unit of measurement
     run = True
     prev_x = x
     prev_y = y
     cur_map = 'map1' # prefix name of the starting map
     old_map = ''
-#     attack_coords = 'undefined'
     attack_list = []
     weapon_delayer = 1
     change_weapon = 'no'
     cooldown = 0
+    player_hp = 20
+    player_hp_max = player_hp
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -349,6 +352,11 @@ def start_game():
         
         mob_list = maintain_mob(game_window, mob_list, [x, y], attack_list, no_walk_list)
 
+        for cur_attack in attack_list:
+            if cur_attack['coords'] == [x, y]:
+                player_hp = player_hp - cur_attack['weapon']['dmg']
+                print('hit')
+
         if keys[pygame.K_q] or change_weapon == 'yes':
             if weapon_delayer < 6:
                 change_weapon = 'yes'
@@ -363,8 +371,20 @@ def start_game():
         if weapon_delayer > 0:
             weapon_delayer = weapon_delayer - 1
 
+        # Draw icons:
         weapon_display_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load current weapon image
         game_window.blit(weapon_display_image, (0, 475))
+        
+        hp_font = pygame.font.SysFont('Comic Sans MS', 25)
+        hp_surface = hp_font.render(str(player_hp), False, (255, 0, 0)) # draw hitsplat
+        game_window.blit(hp_surface, (0, 0))
+
+        if player_hp <= 0:
+            old_map = ''
+            cur_map = 'map1'
+            x, y = starting_x, starting_y
+            player_hp = player_hp_max
+            
 
         pygame.display.update() # update screen
         
