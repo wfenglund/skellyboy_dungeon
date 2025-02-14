@@ -376,7 +376,7 @@ def start_game():
         game_window.blit(weapon_display_image, (0, 475))
         
         hp_font = pygame.font.SysFont('Comic Sans MS', 25)
-        hp_surface = hp_font.render(str(player_hp), False, (255, 0, 0)) # draw hitsplat
+        hp_surface = hp_font.render(str(player_hp) + '/' + str(player_hp_max), False, (255, 0, 0)) # draw hitsplat
         game_window.blit(hp_surface, (0, 0))
 
         if player_hp <= 0:
