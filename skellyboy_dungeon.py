@@ -149,7 +149,6 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
             new_mob_list = new_mob_list + [mob]
     return new_mob_list
         
-
 def draw_all_coor(game_window, map_file, character, color, choice):
     one_tile = 25
     if choice == 'color':
@@ -159,6 +158,12 @@ def draw_all_coor(game_window, map_file, character, color, choice):
         tile_test = pygame.image.load(color).convert() # load image
         for xcoor, ycoor in translate_map_char(map_file, character): # for every instance of 'character'
             game_window.blit(tile_test, (xcoor, ycoor))
+
+def get_polygon(mltp, x, y):
+    x_p = x - ((7*mltp - 25) / 2)
+    y_p = y - ((3*mltp - 25) / 2)
+    polygon_coords = ((x_p, y_p), (x_p + mltp, y_p), (x_p + mltp, y_p - mltp), (x_p + 2*mltp, y_p - mltp), (x_p + 2*mltp, y_p - 2*mltp), (x_p + 5*mltp, y_p - 2*mltp), (x_p + 5*mltp, y_p - mltp), (x_p + 6*mltp, y_p - mltp), (x_p + 6*mltp, y_p), (x_p + 7*mltp, y_p), (x_p + 7*mltp, y_p + 3*mltp), (x_p + 6*mltp, y_p + 3*mltp), (x_p + 6*mltp, y_p + 4*mltp), (x_p + 5*mltp, y_p + 4*mltp), (x_p + 5*mltp, y_p + 5*mltp), (x_p + 2*mltp, y_p + 5*mltp), (x_p + 2*mltp, y_p + 4*mltp), (x_p + mltp, y_p + 4*mltp), (x_p + mltp, y_p + 3*mltp), (x_p, y_p + 3*mltp))
+    return polygon_coords
 
 def start_game():
     # Initiate game:
@@ -385,6 +390,19 @@ def start_game():
             x, y = starting_x, starting_y
             player_hp = player_hp_max
             
+        full_shadow = 800
+        light_intensity = 15
+        for i in range(1, light_intensity):
+            shadow_layer = pygame.Surface((500, 500))
+            shadow_layer.fill((0, 0, 0))
+#             pygame.draw.circle(shadow_layer, (0, 0, 1), (x + (one_tile / 2), y + (one_tile / 2)), 200 - (i * 30))
+            mltp = 15 * i
+            pygame.draw.polygon(shadow_layer, (0, 0, 1), get_polygon(mltp, x, y))
+            shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 0, 9 * one_tile, one_tile))
+            shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 475, 9 * one_tile, one_tile))
+            pygame.Surface.set_colorkey(shadow_layer, (0, 0, 1))
+            shadow_layer.set_alpha(full_shadow / light_intensity - 1)
+            game_window.blit(shadow_layer, (0, 0))
 
         pygame.display.update() # update screen
         
