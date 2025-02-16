@@ -389,14 +389,17 @@ def start_game():
             cur_map = 'map1'
             x, y = starting_x, starting_y
             player_hp = player_hp_max
-            
+        
+        light_setting = 10 # hard
+        light_setting = 15 # normal
+
         full_shadow = 800
-        light_intensity = 15
+        light_intensity = light_setting
         for i in range(1, light_intensity):
             shadow_layer = pygame.Surface((500, 500))
             shadow_layer.fill((0, 0, 0))
 #             pygame.draw.circle(shadow_layer, (0, 0, 1), (x + (one_tile / 2), y + (one_tile / 2)), 200 - (i * 30))
-            mltp = 15 * i
+            mltp = light_setting * i
             pygame.draw.polygon(shadow_layer, (0, 0, 1), get_polygon(mltp, x, y))
             shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 0, 9 * one_tile, one_tile))
             shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 475, 9 * one_tile, one_tile))
