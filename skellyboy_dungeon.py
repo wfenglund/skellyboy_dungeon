@@ -392,6 +392,7 @@ def start_game():
         
         light_setting = 10 # hard
         light_setting = 15 # normal
+#         light_setting = 0  # off
 
         full_shadow = 800
         light_intensity = light_setting
