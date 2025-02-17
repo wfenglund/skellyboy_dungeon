@@ -190,6 +190,7 @@ def start_game():
     player_hp = 20
     player_hp_max = player_hp
     twelve_seconds = 0
+    player_facing = 'front'
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -233,6 +234,7 @@ def start_game():
             elif str(x) + ',' + str(y - one_tile) in connection_dict.keys():
                 y = y - one_tile
                 print('connection')
+            player_facing = 'back'
             print(f'{x},{y}')
 
         if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and not keys[pygame.K_SPACE]:
@@ -241,6 +243,7 @@ def start_game():
             elif str(x) + ',' + str(y + one_tile) in connection_dict.keys():
                 y = y + one_tile
                 print('connection')
+            player_facing = 'front'
             print(f'{x},{y}')
 
         if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not keys[pygame.K_SPACE]:
@@ -249,6 +252,7 @@ def start_game():
             elif str(x - one_tile) + ',' + str(y) in connection_dict.keys():
                 x = x - one_tile
                 print('connection')
+            player_facing = 'left'
             print(f'{x},{y}')
 
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and not keys[pygame.K_SPACE]:
@@ -257,6 +261,7 @@ def start_game():
             elif str(x + one_tile) + ',' + str(y) in connection_dict.keys():
                 x = x + one_tile
                 print('connection')
+            player_facing = 'right'
             print(f'{x},{y}')
 
         if str(x) + ',' + str(y) in connection_dict.keys():
@@ -275,7 +280,19 @@ def start_game():
         game_window.fill((0,0,0))  # fill screen with black
 #         draw_all_coor(game_window, 'map1.txt', '0', (128,128,128), 'color') # draw all '0' characters as dark gray
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
-        pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
+#         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
+        if player_facing == 'back':
+            player_image = pygame.image.load('./images/' + 'player_back.png').convert_alpha() # load image
+            game_window.blit(player_image, (x, y))
+        if player_facing == 'front':
+            player_image = pygame.image.load('./images/' + 'player_front.png').convert_alpha() # load image
+            game_window.blit(player_image, (x, y))
+        if player_facing == 'left':
+            player_image = pygame.image.load('./images/' + 'player_left.png').convert_alpha() # load image
+            game_window.blit(player_image, (x, y))
+        if player_facing == 'right':
+            player_image = pygame.image.load('./images/' + 'player_right.png').convert_alpha() # load image
+            game_window.blit(player_image, (x, y))
 
         if keys[pygame.K_SPACE] and cooldown == 0:
             player_attack = {}
