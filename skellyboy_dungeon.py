@@ -189,6 +189,7 @@ def start_game():
     cooldown = 0
     player_hp = 20
     player_hp_max = player_hp
+    twelve_seconds = 0
 
     weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
     weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
@@ -208,6 +209,7 @@ def start_game():
     # Start game loop:
     while run:
         pygame.time.delay(75) # determine game speed
+        twelve_seconds = twelve_seconds + 75
 
         for event in pygame.event.get():  # for all events
             if event.type == pygame.QUIT: # check if game window gets closed
@@ -375,6 +377,11 @@ def start_game():
             cooldown = cooldown - 1
         if weapon_delayer > 0:
             weapon_delayer = weapon_delayer - 1
+        if twelve_seconds >= 12000: # if ~1200 milliseconds have passed
+            if player_hp < player_hp_max:
+                player_hp = player_hp + 1
+            twelve_seconds = 0
+            print(twelve_seconds)
 
         # Draw icons:
         weapon_display_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load current weapon image
