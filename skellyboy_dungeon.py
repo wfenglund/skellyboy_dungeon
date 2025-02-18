@@ -330,7 +330,7 @@ def start_game():
                 x_diff = mob_x - x
                 y_diff = mob_y - y
                 new_attack = {}
-                new_attack['weapon'] = weapon1
+                new_attack['weapon'] = weapon_list[[i for i in range(0, len(weapon_list)) if weapon_list[i]['name'] == mob['wields']][0]] # suboptimal solution
                 new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
                 if y_diff > 0:
                     new_attack['coords'] = [mob_x, mob_y - one_tile]
