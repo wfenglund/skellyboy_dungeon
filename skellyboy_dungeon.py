@@ -173,34 +173,37 @@ def start_game():
     pygame.font.init()
 
     # Assign variables:
-    starting_x = 250 # starting x coordinate
-    starting_y = 475 # starting y coordinate
-    x = starting_x
-    y = starting_y
     one_tile = 25 # determine fundamental unit of measurement
     run = True
-    prev_x = x
-    prev_y = y
+#     prev_x = x
+#     prev_y = y
     cur_map = 'map1' # prefix name of the starting map
     old_map = ''
     attack_list = []
-    weapon_delayer = 1
-    change_weapon = 'no'
-    cooldown = 0
-    player_hp = 20
-    player_hp_max = player_hp
     twelve_seconds = 0
-    player_facing = 'front'
-
-    weapon1 = {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
-    weapon2 = {'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
-    weapon_list = [weapon1, weapon2]
-    weapon = weapon_list[0]
-
-    # Initiate mob variables:
     mob_list = []
     mob_delayer = 1
 
+    # Create player:
+    player_dict = {}
+    player_dict['starting_coords'] = [250, 475] # x, y
+    player_dict['coords'] = player_dict['starting_coords']
+    player_dict['cooldown'] = 0 # attack cooldown
+    player_dict['change_weapon'] = 'no' # if player has chosen to change weapon
+    player_dict['switch_delayer'] = 0 # delay for switching weapon
+    player_dict['max_hp'] = 20
+    player_dict['hitpoints'] = player_dict['max_hp']
+    player_dict['facing'] = 'front'
+    player_dict['wielding'] = ['basic sword', 'basic bow']
+
+    # Load weapons:
+    armory_dict = {}
+    with open("armory.data") as armory:
+        for row in armory:
+            weapon = eval(row.strip())
+            armory_dict[weapon['name']] = weapon
+
+    # Load mobs:
     bestiary_dict = {}
     with open("bestiary.data") as mobs:
         for row in mobs:
@@ -228,13 +231,14 @@ def start_game():
 
         keys = pygame.key.get_pressed()
         
+        x, y = player_dict['coords']
         if (keys[pygame.K_UP] or keys[pygame.K_w]) and not keys[pygame.K_SPACE]:
             if y > 0 and [x, y - one_tile] not in no_walk_list:
                 y = y - one_tile
             elif str(x) + ',' + str(y - one_tile) in connection_dict.keys():
                 y = y - one_tile
                 print('connection')
-            player_facing = 'back'
+            player_dict['facing'] = 'back'
             print(f'{x},{y}')
 
         if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and not keys[pygame.K_SPACE]:
@@ -243,7 +247,7 @@ def start_game():
             elif str(x) + ',' + str(y + one_tile) in connection_dict.keys():
                 y = y + one_tile
                 print('connection')
-            player_facing = 'front'
+            player_dict['facing'] = 'front'
             print(f'{x},{y}')
 
         if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not keys[pygame.K_SPACE]:
@@ -252,7 +256,7 @@ def start_game():
             elif str(x - one_tile) + ',' + str(y) in connection_dict.keys():
                 x = x - one_tile
                 print('connection')
-            player_facing = 'left'
+            player_dict['facing'] = 'left'
             print(f'{x},{y}')
 
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and not keys[pygame.K_SPACE]:
@@ -261,7 +265,7 @@ def start_game():
             elif str(x + one_tile) + ',' + str(y) in connection_dict.keys():
                 x = x + one_tile
                 print('connection')
-            player_facing = 'right'
+            player_dict['facing'] = 'right'
             print(f'{x},{y}')
 
         if str(x) + ',' + str(y) in connection_dict.keys():
@@ -270,8 +274,9 @@ def start_game():
             coords_list = connection_info[1].split(',')
             x = int(coords_list[0].strip())
             y = int(coords_list[1].strip())
+        player_dict['coords'] = [x, y]
         
-        mob_list, no_walk_list = walk_mobs(mob_list, [x, y], no_walk_list, mob_delayer) # determine if mobs are walking this game cycle and update no walk list
+        mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer) # determine if mobs are walking this game cycle and update no walk list
 
         mob_delayer = mob_delayer + 1
         if mob_delayer > 3:
@@ -281,23 +286,25 @@ def start_game():
 #         draw_all_coor(game_window, 'map1.txt', '0', (128,128,128), 'color') # draw all '0' characters as dark gray
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
 #         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
-        if player_facing == 'back':
+        coord_tuple = tuple(player_dict['coords'])
+        if player_dict['facing'] == 'back':
             player_image = pygame.image.load('./images/' + 'player_back.png').convert_alpha() # load image
-            game_window.blit(player_image, (x, y))
-        if player_facing == 'front':
+            game_window.blit(player_image, coord_tuple)
+        if player_dict['facing'] == 'front':
             player_image = pygame.image.load('./images/' + 'player_front.png').convert_alpha() # load image
-            game_window.blit(player_image, (x, y))
-        if player_facing == 'left':
+            game_window.blit(player_image, coord_tuple)
+        if player_dict['facing'] == 'left':
             player_image = pygame.image.load('./images/' + 'player_left.png').convert_alpha() # load image
-            game_window.blit(player_image, (x, y))
-        if player_facing == 'right':
+            game_window.blit(player_image, coord_tuple)
+        if player_dict['facing'] == 'right':
             player_image = pygame.image.load('./images/' + 'player_right.png').convert_alpha() # load image
-            game_window.blit(player_image, (x, y))
+            game_window.blit(player_image, coord_tuple)
 
-        if keys[pygame.K_SPACE] and cooldown == 0:
+        if keys[pygame.K_SPACE] and player_dict['cooldown'] == 0:
+            x, y = player_dict['coords']
             player_attack = {}
-            player_attack['weapon'] = weapon
-            player_attack['weapon_image'] = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load image
+            player_attack['weapon'] = armory_dict[player_dict['wielding'][0]]
+            player_attack['weapon_image'] = pygame.image.load('./images/' + player_attack['weapon']['image']).convert_alpha() # load image
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 player_attack['coords'] = [x, y - one_tile]
@@ -321,16 +328,17 @@ def start_game():
             if 'coords' in player_attack.keys(): # if an attack was made
                 player_attack['age'] = 'new'
                 player_attack['attacker'] = 'player'
-                cooldown = 8
+                player_dict['cooldown'] = 8
                 attack_list = attack_list + [player_attack]
         
+        x, y = player_dict['coords']
         for mob in mob_list: # determine mob attacks
             if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
                 mob_x, mob_y = mob['coords']
                 x_diff = mob_x - x
                 y_diff = mob_y - y
                 new_attack = {}
-                new_attack['weapon'] = weapon_list[[i for i in range(0, len(weapon_list)) if weapon_list[i]['name'] == mob['wields']][0]] # suboptimal solution
+                new_attack['weapon'] = armory_dict[mob['wields']] # get weapon info
                 new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
                 if y_diff > 0:
                     new_attack['coords'] = [mob_x, mob_y - one_tile]
@@ -376,43 +384,43 @@ def start_game():
         
         mob_list = maintain_mob(game_window, mob_list, [x, y], attack_list, no_walk_list)
 
+        x, y = player_dict['coords']
         for cur_attack in attack_list:
             if cur_attack['coords'] == [x, y]:
-                player_hp = player_hp - cur_attack['weapon']['dmg']
+                player_dict['hitpoints'] = player_dict['hitpoints'] - cur_attack['weapon']['dmg']
                 print('hit')
 
-        if keys[pygame.K_q] or change_weapon == 'yes':
-            if weapon_delayer < 6:
-                change_weapon = 'yes'
-            if change_weapon == 'yes' and weapon_delayer == 0:
-                weapon_list = weapon_list[1:] + [weapon_list[0]]
-                weapon = weapon_list[0]
-                change_weapon = 'no'
-                weapon_delayer = 8
+        if keys[pygame.K_q] or player_dict['change_weapon'] == 'yes':
+            if player_dict['switch_delayer'] < 6:
+                player_dict['change_weapon'] = 'yes'
+            if player_dict['change_weapon'] == 'yes' and player_dict['switch_delayer'] == 0:
+                player_dict['wielding'] = player_dict['wielding'][1:] + [player_dict['wielding'][0]]
+                weapon = player_dict['wielding'][0]
+                player_dict['change_weapon'] = 'no'
+                player_dict['switch_delayer'] = 8
         
-        if cooldown > 0:
-            cooldown = cooldown - 1
-        if weapon_delayer > 0:
-            weapon_delayer = weapon_delayer - 1
+        if player_dict['cooldown'] > 0:
+            player_dict['cooldown'] = player_dict['cooldown'] - 1
+        if player_dict['switch_delayer'] > 0:
+            player_dict['switch_delayer'] = player_dict['switch_delayer'] - 1
         if twelve_seconds >= 12000: # if ~1200 milliseconds have passed
-            if player_hp < player_hp_max:
-                player_hp = player_hp + 1
+            if player_dict['hitpoints'] < player_dict['max_hp']:
+                player_dict['hitpoints'] = player_dict['hitpoints'] + 1
             twelve_seconds = 0
-            print(twelve_seconds)
 
         # Draw icons:
-        weapon_display_image = pygame.image.load('./images/' + weapon['image']).convert_alpha() # load current weapon image
+        weapon_display_image = pygame.image.load('./images/' + armory_dict[player_dict['wielding'][0]]['image']).convert_alpha() # load current weapon image
         game_window.blit(weapon_display_image, (0, 475))
         
         hp_font = pygame.font.SysFont('Comic Sans MS', 25)
-        hp_surface = hp_font.render(str(player_hp) + '/' + str(player_hp_max), False, (255, 0, 0)) # draw hitsplat
+        hp_surface = hp_font.render(str(player_dict['hitpoints']) + '/' + str(player_dict['max_hp']), False, (255, 0, 0)) # draw hitsplat
         game_window.blit(hp_surface, (0, 0))
 
-        if player_hp <= 0:
+        if player_dict['hitpoints'] <= 0:
             old_map = ''
             cur_map = 'map1'
-            x, y = starting_x, starting_y
-            player_hp = player_hp_max
+            player_dict['coords'] = player_dict['starting_coords']
+            player_dict['hitpoints'] = player_dict['max_hp']
         
         light_setting = 10 # hard
         light_setting = 15 # normal
@@ -420,6 +428,7 @@ def start_game():
 
         full_shadow = 800
         light_intensity = light_setting
+        x, y = player_dict['coords']
         for i in range(1, light_intensity):
             shadow_layer = pygame.Surface((500, 500))
             shadow_layer.fill((0, 0, 0))
@@ -435,8 +444,8 @@ def start_game():
         pygame.display.update() # update screen
         
         # store current x and y as previous x and y:
-        prev_x = x
-        prev_y = y
+#         prev_x = x
+#         prev_y = y
         
     pygame.quit()
 
