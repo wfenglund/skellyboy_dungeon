@@ -421,10 +421,6 @@ def start_game():
         # Determine if mobs are walking this game cycle and update no walk list:
         mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer)
 
-        mob_delayer = mob_delayer + 1
-        if mob_delayer > 3:
-            mob_delayer = 1
-        
         # Draw game window:
         game_window.fill((0,0,0))  # fill screen with black
 #         draw_all_coor(game_window, 'map1.txt', '0', (128,128,128), 'color') # draw all '0' characters as dark gray
@@ -460,6 +456,9 @@ def start_game():
         pygame.display.update()
         
         # Handle and update values:
+        mob_delayer = mob_delayer + 1
+        if mob_delayer > 3:
+            mob_delayer = 1
         if player_dict['hitpoints'] <= 0: # if player is out of hitpoints, reset to start position
             old_map = ''
             cur_map = 'map1'
