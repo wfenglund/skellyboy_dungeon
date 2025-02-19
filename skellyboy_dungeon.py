@@ -12,6 +12,93 @@ def translate_map_char(map_file, character): # Get all coordinates of a characte
             row = row + 1
         return map_list
 
+def parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict):
+    one_tile = 25
+    x, y = player_dict['coords']
+    if (keys[pygame.K_UP] or keys[pygame.K_w]) and not keys[pygame.K_SPACE]:
+        if y > 0 and [x, y - one_tile] not in no_walk_list:
+            y = y - one_tile
+        elif str(x) + ',' + str(y - one_tile) in connection_dict.keys():
+            y = y - one_tile
+            print('connection')
+        player_dict['facing'] = 'back'
+        print(f'{x},{y}')
+
+    if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and not keys[pygame.K_SPACE]:
+        if y < 475 and [x, y + one_tile] not in no_walk_list:
+            y = y + one_tile
+        elif str(x) + ',' + str(y + one_tile) in connection_dict.keys():
+            y = y + one_tile
+            print('connection')
+        player_dict['facing'] = 'front'
+        print(f'{x},{y}')
+
+    if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not keys[pygame.K_SPACE]:
+        if x > 0 and [x - one_tile, y] not in no_walk_list:
+            x = x - one_tile
+        elif str(x - one_tile) + ',' + str(y) in connection_dict.keys():
+            x = x - one_tile
+            print('connection')
+        player_dict['facing'] = 'left'
+        print(f'{x},{y}')
+
+    if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and not keys[pygame.K_SPACE]:
+        if x < 475 and [x + one_tile, y] not in no_walk_list:
+            x = x + one_tile
+        elif str(x + one_tile) + ',' + str(y) in connection_dict.keys():
+            x = x + one_tile
+            print('connection')
+        player_dict['facing'] = 'right'
+        print(f'{x},{y}')
+
+    if str(x) + ',' + str(y) in connection_dict.keys():
+        connection_info = connection_dict[str(x) + ',' + str(y)]
+        cur_map = connection_info[0].strip()
+        coords_list = connection_info[1].split(',')
+        x = int(coords_list[0].strip())
+        y = int(coords_list[1].strip())
+    
+    if keys[pygame.K_SPACE] and player_dict['cooldown'] == 0: # if attack ready
+        player_attack = {}
+        player_attack['weapon'] = armory_dict[player_dict['wielding'][0]]
+        player_attack['weapon_image'] = pygame.image.load('./images/' + player_attack['weapon']['image']).convert_alpha() # load image
+
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            player_attack['coords'] = [x, y - one_tile]
+            player_attack['direction'] = 'up'
+            print('attack up')
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            player_attack['coords'] = [x, y + one_tile]
+            player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 180) # rotate weapon downwards
+            player_attack['direction'] = 'down'
+            print('attack down')
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            player_attack['coords'] = [x - one_tile, y]
+            player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 90) # rotate weapon to the left
+            player_attack['direction'] = 'left'
+            print('attack left')
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            player_attack['coords'] = [x + one_tile, y]
+            player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 270) # rotate weapon to the right
+            player_attack['direction'] = 'right'
+            print('attack right')
+        if 'coords' in player_attack.keys(): # if an attack was made
+            player_attack['age'] = 'new'
+            player_attack['attacker'] = 'player'
+            player_dict['cooldown'] = 8
+            attack_list = attack_list + [player_attack]
+    
+    if keys[pygame.K_q] or player_dict['change_weapon'] == 'yes':
+        if player_dict['switch_delayer'] < 6:
+            player_dict['change_weapon'] = 'yes'
+        if player_dict['change_weapon'] == 'yes' and player_dict['switch_delayer'] == 0:
+            player_dict['wielding'] = player_dict['wielding'][1:] + [player_dict['wielding'][0]]
+            player_dict['change_weapon'] = 'no'
+            player_dict['switch_delayer'] = 8
+    
+    player_dict['coords'] = [x, y]
+    return player_dict, cur_map, attack_list
+
 def parse_mapinf(map_file, bestiary_dict):
     connection_dict = {}
     loaded_mobs = []
@@ -148,6 +235,14 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
                 mob['cooldown'] = mob['cooldown'] - 1
             new_mob_list = new_mob_list + [mob]
     return new_mob_list
+
+def maintain_player(player_dict, attack_list):
+    x, y = player_dict['coords']
+    for cur_attack in attack_list:
+        if cur_attack['coords'] == [x, y]:
+            player_dict['hitpoints'] = player_dict['hitpoints'] - cur_attack['weapon']['dmg']
+            print('hit')
+    return player_dict
         
 def draw_all_coor(game_window, map_file, character, color, choice):
     one_tile = 25
@@ -164,6 +259,21 @@ def get_polygon(mltp, x, y):
     y_p = y - ((3*mltp - 25) / 2)
     polygon_coords = ((x_p, y_p), (x_p + mltp, y_p), (x_p + mltp, y_p - mltp), (x_p + 2*mltp, y_p - mltp), (x_p + 2*mltp, y_p - 2*mltp), (x_p + 5*mltp, y_p - 2*mltp), (x_p + 5*mltp, y_p - mltp), (x_p + 6*mltp, y_p - mltp), (x_p + 6*mltp, y_p), (x_p + 7*mltp, y_p), (x_p + 7*mltp, y_p + 3*mltp), (x_p + 6*mltp, y_p + 3*mltp), (x_p + 6*mltp, y_p + 4*mltp), (x_p + 5*mltp, y_p + 4*mltp), (x_p + 5*mltp, y_p + 5*mltp), (x_p + 2*mltp, y_p + 5*mltp), (x_p + 2*mltp, y_p + 4*mltp), (x_p + mltp, y_p + 4*mltp), (x_p + mltp, y_p + 3*mltp), (x_p, y_p + 3*mltp))
     return polygon_coords
+
+def draw_torchlight(game_window, player_dict, light_setting, max_shadow):
+    one_tile = 25
+    light_intensity = light_setting
+    x, y = player_dict['coords']
+    for i in range(1, light_intensity):
+        shadow_layer = pygame.Surface((500, 500))
+        shadow_layer.fill((0, 0, 0))
+        mltp = light_setting * i
+        pygame.draw.polygon(shadow_layer, (0, 0, 1), get_polygon(mltp, x, y))
+        shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 0, 9 * one_tile, one_tile))
+        shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 475, 9 * one_tile, one_tile))
+        pygame.Surface.set_colorkey(shadow_layer, (0, 0, 1))
+        shadow_layer.set_alpha(max_shadow / light_intensity - 1)
+        game_window.blit(shadow_layer, (0, 0))
 
 def start_game():
     # Initiate game:
@@ -226,57 +336,16 @@ def start_game():
             mob_list = loaded_mobs # update mobs
         old_map = cur_map
         
+        # Create no walk list:
         no_walk_list = translate_map_char('./maps/' + cur_map + '.maplay', '#') # find unwalkable tiles
         no_walk_list = no_walk_list + [i['coords'] for i in mob_list]
 
+        # Parse player input:
         keys = pygame.key.get_pressed()
+        player_dict, cur_map, attack_list = parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
         
-        x, y = player_dict['coords']
-        if (keys[pygame.K_UP] or keys[pygame.K_w]) and not keys[pygame.K_SPACE]:
-            if y > 0 and [x, y - one_tile] not in no_walk_list:
-                y = y - one_tile
-            elif str(x) + ',' + str(y - one_tile) in connection_dict.keys():
-                y = y - one_tile
-                print('connection')
-            player_dict['facing'] = 'back'
-            print(f'{x},{y}')
-
-        if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and not keys[pygame.K_SPACE]:
-            if y < 475 and [x, y + one_tile] not in no_walk_list:
-                y = y + one_tile
-            elif str(x) + ',' + str(y + one_tile) in connection_dict.keys():
-                y = y + one_tile
-                print('connection')
-            player_dict['facing'] = 'front'
-            print(f'{x},{y}')
-
-        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and not keys[pygame.K_SPACE]:
-            if x > 0 and [x - one_tile, y] not in no_walk_list:
-                x = x - one_tile
-            elif str(x - one_tile) + ',' + str(y) in connection_dict.keys():
-                x = x - one_tile
-                print('connection')
-            player_dict['facing'] = 'left'
-            print(f'{x},{y}')
-
-        if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and not keys[pygame.K_SPACE]:
-            if x < 475 and [x + one_tile, y] not in no_walk_list:
-                x = x + one_tile
-            elif str(x + one_tile) + ',' + str(y) in connection_dict.keys():
-                x = x + one_tile
-                print('connection')
-            player_dict['facing'] = 'right'
-            print(f'{x},{y}')
-
-        if str(x) + ',' + str(y) in connection_dict.keys():
-            connection_info = connection_dict[str(x) + ',' + str(y)]
-            cur_map = connection_info[0].strip()
-            coords_list = connection_info[1].split(',')
-            x = int(coords_list[0].strip())
-            y = int(coords_list[1].strip())
-        player_dict['coords'] = [x, y]
-        
-        mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer) # determine if mobs are walking this game cycle and update no walk list
+        # Determine if mobs are walking this game cycle and update no walk list:
+        mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer)
 
         mob_delayer = mob_delayer + 1
         if mob_delayer > 3:
@@ -299,37 +368,6 @@ def start_game():
         if player_dict['facing'] == 'right':
             player_image = pygame.image.load('./images/' + 'player_right.png').convert_alpha() # load image
             game_window.blit(player_image, coord_tuple)
-
-        if keys[pygame.K_SPACE] and player_dict['cooldown'] == 0:
-            x, y = player_dict['coords']
-            player_attack = {}
-            player_attack['weapon'] = armory_dict[player_dict['wielding'][0]]
-            player_attack['weapon_image'] = pygame.image.load('./images/' + player_attack['weapon']['image']).convert_alpha() # load image
-
-            if keys[pygame.K_UP] or keys[pygame.K_w]:
-                player_attack['coords'] = [x, y - one_tile]
-                player_attack['direction'] = 'up'
-                print('attack up')
-            elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-                player_attack['coords'] = [x, y + one_tile]
-                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 180) # rotate weapon downwards
-                player_attack['direction'] = 'down'
-                print('attack down')
-            elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                player_attack['coords'] = [x - one_tile, y]
-                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 90) # rotate weapon to the left
-                player_attack['direction'] = 'left'
-                print('attack left')
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                player_attack['coords'] = [x + one_tile, y]
-                player_attack['weapon_image'] = pygame.transform.rotate(player_attack['weapon_image'], 270) # rotate weapon to the right
-                player_attack['direction'] = 'right'
-                print('attack right')
-            if 'coords' in player_attack.keys(): # if an attack was made
-                player_attack['age'] = 'new'
-                player_attack['attacker'] = 'player'
-                player_dict['cooldown'] = 8
-                attack_list = attack_list + [player_attack]
         
         x, y = player_dict['coords']
         for mob in mob_list: # determine mob attacks
@@ -382,66 +420,37 @@ def start_game():
                 new_attack_list = new_attack_list + [cur_attack]
         attack_list = new_attack_list
         
-        mob_list = maintain_mob(game_window, mob_list, [x, y], attack_list, no_walk_list)
-
-        x, y = player_dict['coords']
-        for cur_attack in attack_list:
-            if cur_attack['coords'] == [x, y]:
-                player_dict['hitpoints'] = player_dict['hitpoints'] - cur_attack['weapon']['dmg']
-                print('hit')
-
-        if keys[pygame.K_q] or player_dict['change_weapon'] == 'yes':
-            if player_dict['switch_delayer'] < 6:
-                player_dict['change_weapon'] = 'yes'
-            if player_dict['change_weapon'] == 'yes' and player_dict['switch_delayer'] == 0:
-                player_dict['wielding'] = player_dict['wielding'][1:] + [player_dict['wielding'][0]]
-                weapon = player_dict['wielding'][0]
-                player_dict['change_weapon'] = 'no'
-                player_dict['switch_delayer'] = 8
-        
-        if player_dict['cooldown'] > 0:
-            player_dict['cooldown'] = player_dict['cooldown'] - 1
-        if player_dict['switch_delayer'] > 0:
-            player_dict['switch_delayer'] = player_dict['switch_delayer'] - 1
-        if twelve_seconds >= 12000: # if ~1200 milliseconds have passed
-            if player_dict['hitpoints'] < player_dict['max_hp']:
-                player_dict['hitpoints'] = player_dict['hitpoints'] + 1
-            twelve_seconds = 0
+        mob_list = maintain_mob(game_window, mob_list, player_dict['coords'], attack_list, no_walk_list)
+        player_dict = maintain_player(player_dict, attack_list) # determine if player is hit
 
         # Draw icons:
         weapon_display_image = pygame.image.load('./images/' + armory_dict[player_dict['wielding'][0]]['image']).convert_alpha() # load current weapon image
         game_window.blit(weapon_display_image, (0, 475))
-        
         hp_font = pygame.font.SysFont('Comic Sans MS', 25)
         hp_surface = hp_font.render(str(player_dict['hitpoints']) + '/' + str(player_dict['max_hp']), False, (255, 0, 0)) # draw hitsplat
         game_window.blit(hp_surface, (0, 0))
 
-        if player_dict['hitpoints'] <= 0:
+        # Draw torchlight:
+#         raw_torchlight(game_window, player_dict, 10, 800) # hard
+        draw_torchlight(game_window, player_dict, 15, 800) # normal
+
+        # Update screen:
+        pygame.display.update()
+        
+        # Handle and update values:
+        if player_dict['hitpoints'] <= 0: # if player is out of hitpoints, reset to start position
             old_map = ''
             cur_map = 'map1'
             player_dict['coords'] = player_dict['starting_coords']
             player_dict['hitpoints'] = player_dict['max_hp']
-        
-        light_setting = 10 # hard
-        light_setting = 15 # normal
-#         light_setting = 0  # off
-
-        full_shadow = 800
-        light_intensity = light_setting
-        x, y = player_dict['coords']
-        for i in range(1, light_intensity):
-            shadow_layer = pygame.Surface((500, 500))
-            shadow_layer.fill((0, 0, 0))
-#             pygame.draw.circle(shadow_layer, (0, 0, 1), (x + (one_tile / 2), y + (one_tile / 2)), 200 - (i * 30))
-            mltp = light_setting * i
-            pygame.draw.polygon(shadow_layer, (0, 0, 1), get_polygon(mltp, x, y))
-            shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 0, 9 * one_tile, one_tile))
-            shadow_layer.fill((0, 0, 1), rect = pygame.Rect(0, 475, 9 * one_tile, one_tile))
-            pygame.Surface.set_colorkey(shadow_layer, (0, 0, 1))
-            shadow_layer.set_alpha(full_shadow / light_intensity - 1)
-            game_window.blit(shadow_layer, (0, 0))
-
-        pygame.display.update() # update screen
+        if player_dict['cooldown'] > 0: # decrease cooldown if relevant
+            player_dict['cooldown'] = player_dict['cooldown'] - 1
+        if player_dict['switch_delayer'] > 0: # decrease weapon switch delayer if relevant
+            player_dict['switch_delayer'] = player_dict['switch_delayer'] - 1
+        if twelve_seconds >= 12000: # if ~1200 milliseconds have passed
+            if player_dict['hitpoints'] < player_dict['max_hp']: # if not full hp
+                player_dict['hitpoints'] = player_dict['hitpoints'] + 1 # increase hp by one
+            twelve_seconds = 0 # reset timer
         
         # store current x and y as previous x and y:
 #         prev_x = x
