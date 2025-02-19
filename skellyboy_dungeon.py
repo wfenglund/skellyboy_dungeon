@@ -254,6 +254,80 @@ def draw_all_coor(game_window, map_file, character, color, choice):
         for xcoor, ycoor in translate_map_char(map_file, character): # for every instance of 'character'
             game_window.blit(tile_test, (xcoor, ycoor))
 
+def draw_player(game_window, player_dict):
+    coord_tuple = tuple(player_dict['coords'])
+    if player_dict['facing'] == 'back':
+        player_image = pygame.image.load('./images/' + 'player_back.png').convert_alpha() # load image
+        game_window.blit(player_image, coord_tuple)
+    if player_dict['facing'] == 'front':
+        player_image = pygame.image.load('./images/' + 'player_front.png').convert_alpha() # load image
+        game_window.blit(player_image, coord_tuple)
+    if player_dict['facing'] == 'left':
+        player_image = pygame.image.load('./images/' + 'player_left.png').convert_alpha() # load image
+        game_window.blit(player_image, coord_tuple)
+    if player_dict['facing'] == 'right':
+        player_image = pygame.image.load('./images/' + 'player_right.png').convert_alpha() # load image
+        game_window.blit(player_image, coord_tuple)
+
+def determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict):
+    one_tile = 25
+    x, y = player_dict['coords']
+    for mob in mob_list: # determine mob attacks
+        if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
+            mob_x, mob_y = mob['coords']
+            x_diff = mob_x - x
+            y_diff = mob_y - y
+            new_attack = {}
+            new_attack['weapon'] = armory_dict[mob['wields']] # get weapon info
+            new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
+            if y_diff > 0:
+                new_attack['coords'] = [mob_x, mob_y - one_tile]
+                new_attack['direction'] = 'up'
+            elif y_diff < 0:
+                new_attack['coords'] = [mob_x, mob_y + one_tile]
+                new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 180) # rotate weapon downwards
+                new_attack['direction'] = 'down'
+            elif x_diff > 0:
+                new_attack['coords'] = [mob_x - one_tile, mob_y]
+                new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 90) # rotate weapon downwards
+                new_attack['direction'] = 'left'
+            elif x_diff < 0:
+                new_attack['coords'] = [mob_x + one_tile, mob_y]
+                new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 270) # rotate weapon downwards
+                new_attack['direction'] = 'right'
+            if 'coords' in new_attack.keys(): # if an attack was made
+                mob['cooldown'] = 8
+                new_attack['age'] = 'new'
+                new_attack['attacker'] = 'mob'
+                attack_list = attack_list + [new_attack]
+    return attack_list
+
+def draw_attacks(attack_list):
+    pass
+
+def update_attacks(game_window, attack_list):
+    one_tile = 25
+    new_attack_list = []
+    for cur_attack in attack_list:
+        attack_coords = cur_attack['coords']
+        game_window.blit(cur_attack['weapon_image'], (attack_coords[0], attack_coords[1]))
+        if cur_attack['weapon']['type'] == 'projectile' and cur_attack['age'] == 'old':
+            if cur_attack['direction'] == 'up':
+                attack_coords[1] = attack_coords[1] - one_tile
+            elif cur_attack['direction'] == 'down':
+                attack_coords[1] = attack_coords[1] + one_tile
+            elif cur_attack['direction'] == 'left':
+                attack_coords[0] = attack_coords[0] - one_tile
+            elif cur_attack['direction'] == 'right':
+                attack_coords[0] = attack_coords[0] + one_tile
+            if attack_coords[0] > 0 and attack_coords[0] < 500 and attack_coords[1] > 0 and attack_coords[1] < 500:
+                cur_attack['coords'] = attack_coords
+                new_attack_list = new_attack_list + [cur_attack]
+        elif cur_attack['age'] == 'new': # if attack was initiated this cycle
+            cur_attack['age'] = 'old'
+            new_attack_list = new_attack_list + [cur_attack]
+    return new_attack_list
+
 def get_polygon(mltp, x, y):
     x_p = x - ((7*mltp - 25) / 2)
     y_p = y - ((3*mltp - 25) / 2)
@@ -350,76 +424,24 @@ def start_game():
         mob_delayer = mob_delayer + 1
         if mob_delayer > 3:
             mob_delayer = 1
-
+        
+        # Draw game window:
         game_window.fill((0,0,0))  # fill screen with black
 #         draw_all_coor(game_window, 'map1.txt', '0', (128,128,128), 'color') # draw all '0' characters as dark gray
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
 #         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
-        coord_tuple = tuple(player_dict['coords'])
-        if player_dict['facing'] == 'back':
-            player_image = pygame.image.load('./images/' + 'player_back.png').convert_alpha() # load image
-            game_window.blit(player_image, coord_tuple)
-        if player_dict['facing'] == 'front':
-            player_image = pygame.image.load('./images/' + 'player_front.png').convert_alpha() # load image
-            game_window.blit(player_image, coord_tuple)
-        if player_dict['facing'] == 'left':
-            player_image = pygame.image.load('./images/' + 'player_left.png').convert_alpha() # load image
-            game_window.blit(player_image, coord_tuple)
-        if player_dict['facing'] == 'right':
-            player_image = pygame.image.load('./images/' + 'player_right.png').convert_alpha() # load image
-            game_window.blit(player_image, coord_tuple)
+        draw_player(game_window, player_dict)
         
-        x, y = player_dict['coords']
-        for mob in mob_list: # determine mob attacks
-            if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
-                mob_x, mob_y = mob['coords']
-                x_diff = mob_x - x
-                y_diff = mob_y - y
-                new_attack = {}
-                new_attack['weapon'] = armory_dict[mob['wields']] # get weapon info
-                new_attack['weapon_image'] = pygame.image.load('./images/' + new_attack['weapon']['image']).convert_alpha() # load image
-                if y_diff > 0:
-                    new_attack['coords'] = [mob_x, mob_y - one_tile]
-                    new_attack['direction'] = 'up'
-                elif y_diff < 0:
-                    new_attack['coords'] = [mob_x, mob_y + one_tile]
-                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 180) # rotate weapon downwards
-                    new_attack['direction'] = 'down'
-                elif x_diff > 0:
-                    new_attack['coords'] = [mob_x - one_tile, mob_y]
-                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 90) # rotate weapon downwards
-                    new_attack['direction'] = 'left'
-                elif x_diff < 0:
-                    new_attack['coords'] = [mob_x + one_tile, mob_y]
-                    new_attack['weapon_image'] = pygame.transform.rotate(new_attack['weapon_image'], 270) # rotate weapon downwards
-                    new_attack['direction'] = 'right'
-                if 'coords' in new_attack.keys(): # if an attack was made
-                    mob['cooldown'] = 8
-                    new_attack['age'] = 'new'
-                    new_attack['attacker'] = 'mob'
-                    attack_list = attack_list + [new_attack]
+        # Add new mob attacks:
+        attack_list = determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict)
+
+        # Draw attacks:
+#         draw_attacks(game_window, attack_list)
         
-        new_attack_list = []
-        for cur_attack in attack_list:
-            attack_coords = cur_attack['coords']
-            game_window.blit(cur_attack['weapon_image'], (attack_coords[0], attack_coords[1]))
-            if cur_attack['weapon']['type'] == 'projectile' and cur_attack['age'] == 'old':
-                if cur_attack['direction'] == 'up':
-                    attack_coords[1] = attack_coords[1] - one_tile
-                elif cur_attack['direction'] == 'down':
-                    attack_coords[1] = attack_coords[1] + one_tile
-                elif cur_attack['direction'] == 'left':
-                    attack_coords[0] = attack_coords[0] - one_tile
-                elif cur_attack['direction'] == 'right':
-                    attack_coords[0] = attack_coords[0] + one_tile
-                if attack_coords[0] > 0 and attack_coords[0] < 500 and attack_coords[1] > 0 and attack_coords[1] < 500:
-                    cur_attack['coords'] = attack_coords
-                    new_attack_list = new_attack_list + [cur_attack]
-            elif cur_attack['age'] == 'new': # if attack was initiated this cycle
-                cur_attack['age'] = 'old'
-                new_attack_list = new_attack_list + [cur_attack]
-        attack_list = new_attack_list
+        # Update current attacks:
+        attack_list = update_attacks(game_window, attack_list)
         
+        # Maintain mobs and players:
         mob_list = maintain_mob(game_window, mob_list, player_dict['coords'], attack_list, no_walk_list)
         player_dict = maintain_player(player_dict, attack_list) # determine if player is hit
 
