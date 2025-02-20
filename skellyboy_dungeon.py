@@ -328,6 +328,13 @@ def update_attacks(game_window, attack_list):
             new_attack_list = new_attack_list + [cur_attack]
     return new_attack_list
 
+def draw_icons(game_window, player_dict, armory_dict):
+    weapon_display_image = pygame.image.load('./images/' + armory_dict[player_dict['wielding'][0]]['image']).convert_alpha() # load current weapon image
+    game_window.blit(weapon_display_image, (0, 475))
+    hp_font = pygame.font.SysFont('Comic Sans MS', 25)
+    hp_surface = hp_font.render(str(player_dict['hitpoints']) + '/' + str(player_dict['max_hp']), False, (255, 0, 0)) # draw hitsplat
+    game_window.blit(hp_surface, (0, 0))
+
 def get_polygon(mltp, x, y):
     x_p = x - ((7*mltp - 25) / 2)
     y_p = y - ((3*mltp - 25) / 2)
@@ -442,11 +449,7 @@ def start_game():
         player_dict = maintain_player(player_dict, attack_list) # determine if player is hit
 
         # Draw icons:
-        weapon_display_image = pygame.image.load('./images/' + armory_dict[player_dict['wielding'][0]]['image']).convert_alpha() # load current weapon image
-        game_window.blit(weapon_display_image, (0, 475))
-        hp_font = pygame.font.SysFont('Comic Sans MS', 25)
-        hp_surface = hp_font.render(str(player_dict['hitpoints']) + '/' + str(player_dict['max_hp']), False, (255, 0, 0)) # draw hitsplat
-        game_window.blit(hp_surface, (0, 0))
+        draw_icons(game_window, player_dict, armory_dict)
 
         # Draw torchlight:
 #         raw_torchlight(game_window, player_dict, 10, 800) # hard
