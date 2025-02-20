@@ -1,6 +1,13 @@
 import pygame
 import math
 import random
+import lan_functions
+
+def host_server():
+    pass
+
+def client_interaction():
+    pass
 
 def translate_map_char(map_file, character): # Get all coordinates of a character in a map file
     with open(map_file) as raw_map:
@@ -374,6 +381,8 @@ def start_game():
     twelve_seconds = 0
     mob_list = []
     mob_delayer = 1
+#     host_server = True
+    host_server = False
 
     # Create player:
     player_dict = {}
@@ -423,6 +432,7 @@ def start_game():
 
         # Parse player input:
         keys = pygame.key.get_pressed()
+#         keys = lan_functions.retrieve_keys() # control player via UDP-socket
         player_dict, cur_map, attack_list = parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
         
         # Determine if mobs are walking this game cycle and update no walk list:
