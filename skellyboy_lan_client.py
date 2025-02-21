@@ -47,7 +47,7 @@ while run:
         key_dump = json.dumps(key_dict)
         print(key_dump.encode())
         client_socket.sendto(key_dump.encode(), (host, port))
-        time.sleep(0.001)
+        time.sleep(0.1)
 #     received_data = client_socket.recv(1024)
 #             pygame.time.delay(300)
 #         client_socket.sendall(input('> ').encode())
