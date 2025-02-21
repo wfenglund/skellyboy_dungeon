@@ -389,7 +389,7 @@ def start_game():
     # Open socket:
     if host_server == True:
         host = sys.argv[1]
-        port = sys.argv[2]
+        port = int(sys.argv[2])
         open_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         open_socket.bind((host, port))
         open_socket.settimeout(0.00001)
