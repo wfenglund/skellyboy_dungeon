@@ -1,11 +1,11 @@
+import sys
 import socket
 import pygame
 import json
 import time
 
-host = "127.0.0.1"
-port = 6666
-
+host = sys.argv[1]
+port = int(sys.argv[2])
 run = True
 
 def translate_keys(keys):
@@ -32,15 +32,11 @@ def translate_keys(keys):
         key_dict[pygame.K_q] = True
     return key_dict
 
-client_socket = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-
-# while True:
-#     data, addr = sock.recvfrom(32) # buffer size is 1024 bytes
-#     print("received message: ", data)
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # Internet, UDP
 
 pygame.init()
 game_window = pygame.display.set_mode((500, 500))
+
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

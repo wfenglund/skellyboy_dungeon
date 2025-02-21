@@ -1,4 +1,6 @@
 import pygame
+import sys
+import socket
 import math
 import random
 import lan_functions
@@ -384,6 +386,14 @@ def start_game():
 #     host_server = True
     host_server = False
 
+    # Open socket:
+    if host_server == True:
+        host = sys.argv[1]
+        port = sys.argv[2]
+        open_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        open_socket.bind((host, port))
+        open_socket.settimeout(0.00001)
+
     # Create player:
     player_dict = {}
     player_dict['starting_coords'] = [250, 475] # x, y
@@ -432,7 +442,8 @@ def start_game():
 
         # Parse player input:
         keys = pygame.key.get_pressed()
-#         keys = lan_functions.retrieve_keys() # control player via UDP-socket
+        if host_server == True:
+            keys = lan_functions.retrieve_keys(open_socket) # control player via UDP-socket
         player_dict, cur_map, attack_list = parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
         
         # Determine if mobs are walking this game cycle and update no walk list:
@@ -489,7 +500,7 @@ def start_game():
         # store current x and y as previous x and y:
 #         prev_x = x
 #         prev_y = y
-        
+    open_socket.close()
     pygame.quit()
 
 start_game()
