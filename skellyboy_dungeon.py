@@ -383,8 +383,9 @@ def start_game():
     twelve_seconds = 0
     mob_list = []
     mob_delayer = 1
-#     host_server = True
-    host_server = False
+    host_server = True
+#     host_server = False
+    socket_players = {} # create list to hold players who connect using UDP
 
     # Open socket:
     if host_server == True:
@@ -405,6 +406,7 @@ def start_game():
     player_dict['hitpoints'] = player_dict['max_hp']
     player_dict['facing'] = 'front'
     player_dict['wielding'] = ['basic sword', 'basic bow']
+    player_copy = player_dict.copy()
 
     # Load weapons:
     armory_dict = {}
@@ -443,8 +445,22 @@ def start_game():
         # Parse player input:
         keys = pygame.key.get_pressed()
         if host_server == True:
-            keys = lan_functions.retrieve_keys(open_socket) # control player via UDP-socket
+#             keys = lan_functions.retrieve_keys(open_socket) # control player via UDP-socket
+            keys2 = ''
+            while keys2 != 'nothing':
+                keys2, sender = lan_functions.retrieve_keys2(open_socket) # control player via UDP-socket
+                if keys2 != 'nothing':
+                    if sender[0] not in socket_players.keys():
+                        socket_players[sender[0]] = [player_copy, keys2]
+                    else:
+                        socket_players[sender[0]][1] = keys2
+        print(socket_players)
+
         player_dict, cur_map, attack_list = parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
+        for user_key in socket_players.keys(): # handle socket connected players
+            socket_players[user_key][0], cur_map, attack_list = parse_player_input(socket_players[user_key][0], socket_players[user_key][1], no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
+            # Reset keys for player:
+            socket_players[user_key][1] = {i:False for i in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_SPACE, pygame.K_q]}
         
         # Determine if mobs are walking this game cycle and update no walk list:
         mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer)
@@ -455,6 +471,8 @@ def start_game():
         draw_all_coor(game_window, './maps/' + cur_map + '.maplay', '0', ('./images/' + 'tile_test.png'), 'picture') # draw all '0' characters as test tile
 #         pygame.draw.rect(game_window, (255,0,0), (x, y, one_tile, one_tile))  # draw player
         draw_player(game_window, player_dict)
+        for user_key in socket_players.keys(): # handle socket connected players
+            draw_player(game_window, socket_players[user_key][0])
         
         # Add new mob attacks:
         attack_list = determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict)
@@ -468,13 +486,18 @@ def start_game():
         # Maintain mobs and players:
         mob_list = maintain_mob(game_window, mob_list, player_dict['coords'], attack_list, no_walk_list)
         player_dict = maintain_player(player_dict, attack_list) # determine if player is hit
+        for user_key in socket_players.keys(): # handle socket connected players
+            socket_players[user_key][0] = maintain_player(socket_players[user_key][0], attack_list)
 
         # Draw icons:
         draw_icons(game_window, player_dict, armory_dict)
 
         # Draw torchlight:
 #         raw_torchlight(game_window, player_dict, 10, 800) # hard
-        draw_torchlight(game_window, player_dict, 15, 800) # normal
+        max_shadow = 800 / (len(socket_players.keys()) + 1)
+        draw_torchlight(game_window, player_dict, 15, max_shadow) # normal
+        for user_key in socket_players.keys(): # handle socket connected players
+            draw_torchlight(game_window, socket_players[user_key][0], 15, max_shadow)
 
         # Update screen:
         pygame.display.update()
@@ -492,6 +515,11 @@ def start_game():
             player_dict['cooldown'] = player_dict['cooldown'] - 1
         if player_dict['switch_delayer'] > 0: # decrease weapon switch delayer if relevant
             player_dict['switch_delayer'] = player_dict['switch_delayer'] - 1
+        for user_key in socket_players.keys(): # handle socket connected players
+            if socket_players[user_key][0]['cooldown'] > 0:
+                socket_players[user_key][0]['cooldown'] = socket_players[user_key][0]['cooldown'] - 1
+            if socket_players[user_key][0]['switch_delayer'] > 0:
+                socket_players[user_key][0]['switch_delayer'] = socket_players[user_key][0]['switch_delayer'] - 1
         if twelve_seconds >= 12000: # if ~1200 milliseconds have passed
             if player_dict['hitpoints'] < player_dict['max_hp']: # if not full hp
                 player_dict['hitpoints'] = player_dict['hitpoints'] + 1 # increase hp by one
