@@ -185,13 +185,33 @@ def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
             new_mob_list = new_mob_list + [mob]
     return new_mob_list, no_walk_list
 
+def attack_overlap(coords1, coords2):
+    one_tile = 25
+
+    if coords1[0] == coords2[0]:
+        diff = coords1[1] - coords2[1]
+        positive_diff = math.sqrt(diff * diff)
+        if positive_diff < one_tile:
+            return True
+        else:
+            return False
+    elif coords1[1] == coords2[1]:
+        diff = coords1[0] - coords2[0]
+        positive_diff = math.sqrt(diff * diff)
+        if positive_diff < one_tile:
+            return True
+        else:
+            return False
+    else:
+        return False
+
 def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list):
     one_tile = 25
 
     for cur_attack in attack_list: # for every attack
         new_mob_list = []
         for mob in mob_list:
-            if mob['coords'] == cur_attack['coords'] and cur_attack['attacker'] == 'player':
+            if attack_overlap(mob['coords'], cur_attack['coords']) and cur_attack['attacker'] == 'player':
                 mob['status'] = 'attacked'
                 mob['aggro'] = 'yes'
                 if cur_attack['weapon']['dmg'] < mob['hitpoints']:
@@ -248,7 +268,7 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
 def maintain_player(player_dict, attack_list):
     x, y = player_dict['coords']
     for cur_attack in attack_list:
-        if cur_attack['coords'] == [x, y]:
+        if attack_overlap([x, y], cur_attack['coords']) and cur_attack['attacker'] == 'mob':
             player_dict['hitpoints'] = player_dict['hitpoints'] - cur_attack['weapon']['dmg']
             print('hit')
     return player_dict
