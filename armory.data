@@ -1,2 +1,2 @@
 {'name': 'basic sword', 'type':'melee', 'dmg': 3, 'bounce': 2, 'image': 'test_sword.png'}
-{'name': 'basic bow', 'type':'projectile', 'dmg': 2, 'bounce': 0, 'image': 'basic_arrow.png'}
+{'name': 'basic bow', 'type':'projectile', 'dmg': 1, 'bounce': 1, 'image': 'basic_arrow.png'}

@@ -92,6 +92,7 @@ def parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, ar
             player_attack['direction'] = 'right'
             print('attack right')
         if 'coords' in player_attack.keys(): # if an attack was made
+            player_attack['coords_old'] = [x, y]
             player_attack['age'] = 'new'
             player_attack['attacker'] = 'player'
             player_dict['cooldown'] = 8
@@ -223,11 +224,15 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
                 # make mobs bounce back from being hit but not into walls:
                 bounce_back = cur_attack['weapon']['bounce']
                 old_x, old_y = mob['coords']
+                atk_x, atk_y = cur_attack['coords_old']
                 x_bounce, y_bounce = [0, 0]
                 while bounce_back > 0:
-                    if [old_x + x_bounce + (old_x - player_coords[0]), old_y + y_bounce + (old_y - player_coords[1])] not in no_walk_list:
-                        x_bounce = x_bounce + (old_x - player_coords[0])
-                        y_bounce = y_bounce + (old_y - player_coords[1])
+#                     if [old_x + x_bounce + (old_x - player_coords[0]), old_y + y_bounce + (old_y - player_coords[1])] not in no_walk_list:
+#                         x_bounce = x_bounce + (old_x - player_coords[0])
+#                         y_bounce = y_bounce + (old_y - player_coords[1])
+                    if [old_x + x_bounce + (old_x - atk_x), old_y + y_bounce + (old_y - atk_y)] not in no_walk_list:
+                        x_bounce = x_bounce + (old_x - atk_x)
+                        y_bounce = y_bounce + (old_y - atk_y)
                     bounce_back = bounce_back - 1
                 mob['coords'] = [old_x + x_bounce, old_y + y_bounce]
             new_mob_list = new_mob_list + [mob]
@@ -326,6 +331,7 @@ def determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict):
                 new_attack['direction'] = 'right'
             if 'coords' in new_attack.keys(): # if an attack was made
                 mob['cooldown'] = 8
+                new_attack['coords_old'] = [mob_x, mob_y]
                 new_attack['age'] = 'new'
                 new_attack['attacker'] = 'mob'
                 attack_list = attack_list + [new_attack]
@@ -350,6 +356,7 @@ def update_attacks(game_window, attack_list):
             elif cur_attack['direction'] == 'right':
                 attack_coords[0] = attack_coords[0] + one_tile
             if attack_coords[0] > 0 and attack_coords[0] < 500 and attack_coords[1] > 0 and attack_coords[1] < 500:
+                cur_attack['coords_old'] = cur_attack['coords']
                 cur_attack['coords'] = attack_coords
                 new_attack_list = new_attack_list + [cur_attack]
         elif cur_attack['age'] == 'new': # if attack was initiated this cycle
