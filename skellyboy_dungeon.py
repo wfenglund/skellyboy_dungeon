@@ -206,6 +206,18 @@ def attack_overlap(coords1, coords2):
     else:
         return False
 
+def calculate_bounce(cur_victim, cur_attack, no_walk_list):
+    old_x, old_y = cur_victim['coords']
+    atk_x, atk_y = cur_attack['coords_old']
+    bounce_back = cur_attack['weapon']['bounce']
+    x_bounce, y_bounce = [0, 0]
+    while bounce_back > 0:
+        if [old_x + x_bounce + (old_x - atk_x), old_y + y_bounce + (old_y - atk_y)] not in no_walk_list:
+            x_bounce = x_bounce + (old_x - atk_x)
+            y_bounce = y_bounce + (old_y - atk_y)
+        bounce_back = bounce_back - 1
+    return [old_x + int(x_bounce), old_y + int(y_bounce)] # return new coordinates
+
 def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list):
     one_tile = 25
 
@@ -222,19 +234,7 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
                 mob['hitpoints'] = mob['hitpoints'] - cur_attack['weapon']['dmg']
 
                 # make mobs bounce back from being hit but not into walls:
-                bounce_back = cur_attack['weapon']['bounce']
-                old_x, old_y = mob['coords']
-                atk_x, atk_y = cur_attack['coords_old']
-                x_bounce, y_bounce = [0, 0]
-                while bounce_back > 0:
-#                     if [old_x + x_bounce + (old_x - player_coords[0]), old_y + y_bounce + (old_y - player_coords[1])] not in no_walk_list:
-#                         x_bounce = x_bounce + (old_x - player_coords[0])
-#                         y_bounce = y_bounce + (old_y - player_coords[1])
-                    if [old_x + x_bounce + (old_x - atk_x), old_y + y_bounce + (old_y - atk_y)] not in no_walk_list:
-                        x_bounce = x_bounce + (old_x - atk_x)
-                        y_bounce = y_bounce + (old_y - atk_y)
-                    bounce_back = bounce_back - 1
-                mob['coords'] = [old_x + x_bounce, old_y + y_bounce]
+                mob['coords'] = calculate_bounce(mob, cur_attack, no_walk_list)
             new_mob_list = new_mob_list + [mob]
         mob_list = new_mob_list
  
@@ -270,11 +270,12 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
             new_mob_list = new_mob_list + [mob]
     return new_mob_list
 
-def maintain_player(player_dict, attack_list):
+def maintain_player(player_dict, attack_list, no_walk_list):
     x, y = player_dict['coords']
     for cur_attack in attack_list:
         if attack_overlap([x, y], cur_attack['coords']) and cur_attack['attacker'] == 'mob':
             player_dict['hitpoints'] = player_dict['hitpoints'] - cur_attack['weapon']['dmg']
+            player_dict['coords'] = calculate_bounce(player_dict, cur_attack, no_walk_list)
             print('hit')
     return player_dict
         
@@ -512,9 +513,9 @@ def start_game():
         
         # Maintain mobs and players:
         mob_list = maintain_mob(game_window, mob_list, player_dict['coords'], attack_list, no_walk_list)
-        player_dict = maintain_player(player_dict, attack_list) # determine if player is hit
+        player_dict = maintain_player(player_dict, attack_list, no_walk_list) # determine if player is hit
         for user_key in socket_players.keys(): # handle socket connected players
-            socket_players[user_key][0] = maintain_player(socket_players[user_key][0], attack_list)
+            socket_players[user_key][0] = maintain_player(socket_players[user_key][0], attack_list, no_walk_list)
 
         # Draw icons:
         draw_icons(game_window, player_dict, armory_dict)
