@@ -425,6 +425,7 @@ def start_game():
 
     # Create player:
     player_dict = {}
+    player_dict['name'] = 'local'
     player_dict['starting_coords'] = [250, 475] # x, y
     player_dict['coords'] = player_dict['starting_coords']
     player_dict['cooldown'] = 0 # attack cooldown
@@ -479,6 +480,7 @@ def start_game():
                 keys2, sender = lan_functions.retrieve_keys2(open_socket) # control player via UDP-socket
                 if keys2 != 'nothing':
                     if sender[0] not in socket_players.keys():
+                        player_copy['name'] = sender[0] # give the player a name
                         socket_players[sender[0]] = [player_copy, keys2]
                     else:
                         socket_players[sender[0]][1] = keys2
