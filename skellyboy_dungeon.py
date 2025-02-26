@@ -94,7 +94,7 @@ def parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, ar
         if 'coords' in player_attack.keys(): # if an attack was made
             player_attack['coords_old'] = [x, y]
             player_attack['age'] = 'new'
-            player_attack['attacker'] = 'player'
+            player_attack['attacker'] = player_dict['name']
             player_dict['cooldown'] = 8
             attack_list = attack_list + [player_attack]
     
@@ -134,15 +134,23 @@ def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
         for mob in mob_list:
             full_x = mob_x = mob['coords'][0]
             full_y = mob_y = mob['coords'][1]
-            x_diff = mob_x - player_coords[0]
-            y_diff = mob_y - player_coords[1]
-            x_diff_tiles = math.sqrt(x_diff * x_diff)
-            y_diff_tiles = math.sqrt(y_diff * y_diff)
-            if (x_diff_tiles > (4 * one_tile) or y_diff_tiles > (4 * one_tile)) and mob['aggro'] == 'no':
-                x_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
-                y_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+            if mob['aggro'] == 'no':
+                for player in player_coords.keys():
+                    x_diff = mob_x - player_coords[player][0]
+                    y_diff = mob_y - player_coords[player][1]
+                    x_diff_tiles = math.sqrt(x_diff * x_diff)
+                    y_diff_tiles = math.sqrt(y_diff * y_diff)
+                    if (x_diff_tiles > (4 * one_tile) or y_diff_tiles > (4 * one_tile)) and (mob['aggro'] == 'no' and mob['target'] != player):
+                        x_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+                        y_diff = [0, 0, 0, 0, 0, 0, 0, 0, 25, -25][random.randint(0, 9)]
+                    else:
+                        mob['aggro'] = 'yes'
+                        mob['target'] = player
+                        break
             else:
-                mob['aggro'] = 'yes'
+                player = mob['target']
+                x_diff = mob_x - player_coords[player][0]
+                y_diff = mob_y - player_coords[player][1]
             if mob['x_movement'] == 'none' and mob['y_movement'] == 'none':
                 if x_diff > 0:
                     full_x = mob_x - one_tile
@@ -164,7 +172,7 @@ def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
                     mob_y = mob_y + (one_tile / 2)
                     mob['y_movement'] = 'y_plus'
                     mob['facing'] = 'front'
-                if [full_x, full_y] != [player_coords[0], player_coords[1]] and [full_x, full_y] not in no_walk_list:
+                if [full_x, full_y] != [player_coords[player][0], player_coords[player][1]] and [full_x, full_y] not in no_walk_list:
                     if mob['coords'] in no_walk_list:
                         no_walk_list.pop(no_walk_list.index(mob['coords']))
                     mob['coords'] = [mob_x, mob_y]
@@ -224,9 +232,10 @@ def maintain_mob(game_window, mob_list, player_coords, attack_list, no_walk_list
     for cur_attack in attack_list: # for every attack
         new_mob_list = []
         for mob in mob_list:
-            if attack_overlap(mob['coords'], cur_attack['coords']) and cur_attack['attacker'] == 'player':
+            if attack_overlap(mob['coords'], cur_attack['coords']) and cur_attack['attacker'] != 'mob':
                 mob['status'] = 'attacked'
                 mob['aggro'] = 'yes'
+                mob['target'] = cur_attack['attacker']
                 if cur_attack['weapon']['dmg'] < mob['hitpoints']:
                     mob['damage'] = cur_attack['weapon']['dmg']
                 else:
@@ -306,10 +315,10 @@ def draw_player(game_window, player_dict):
 
 def determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict):
     one_tile = 25
-    x, y = player_dict['coords']
     for mob in mob_list: # determine mob attacks
         if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
             mob_x, mob_y = mob['coords']
+            x, y = player_dict[mob['target']]
             x_diff = mob_x - x
             y_diff = mob_y - y
             new_attack = {}
@@ -487,13 +496,17 @@ def start_game():
         print(socket_players)
 
         player_dict, cur_map, attack_list = parse_player_input(player_dict, keys, no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
+
+        coords_dict = {}
+        coords_dict[player_dict['name']] = player_dict['coords']
         for user_key in socket_players.keys(): # handle socket connected players
             socket_players[user_key][0], cur_map, attack_list = parse_player_input(socket_players[user_key][0], socket_players[user_key][1], no_walk_list, attack_list, cur_map, armory_dict, connection_dict)
             # Reset keys for player:
             socket_players[user_key][1] = {i:False for i in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_SPACE, pygame.K_q]}
+            coords_dict[socket_players[user_key][0]['name']] = socket_players[user_key][0]['coords']
         
         # Determine if mobs are walking this game cycle and update no walk list:
-        mob_list, no_walk_list = walk_mobs(mob_list, player_dict['coords'], no_walk_list, mob_delayer)
+        mob_list, no_walk_list = walk_mobs(mob_list, coords_dict, no_walk_list, mob_delayer)
 
         # Draw game window:
         game_window.fill((0,0,0))  # fill screen with black
@@ -505,7 +518,7 @@ def start_game():
             draw_player(game_window, socket_players[user_key][0])
         
         # Add new mob attacks:
-        attack_list = determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict)
+        attack_list = determine_mob_attacks(mob_list, coords_dict, attack_list, armory_dict)
 
         # Draw attacks:
 #         draw_attacks(game_window, attack_list)
