@@ -316,7 +316,7 @@ def draw_player(game_window, player_dict):
 def determine_mob_attacks(mob_list, player_dict, attack_list, armory_dict):
     one_tile = 25
     for mob in mob_list: # determine mob attacks
-        if mob['aggro'] == 'yes' and mob['cooldown'] == 0:
+        if mob['aggro'] == 'yes' and mob['cooldown'] == 0 and (mob['x_movement'] == 'none' and mob['y_movement'] == 'none'):
             mob_x, mob_y = mob['coords']
             x, y = player_dict[mob['target']]
             x_diff = mob_x - x
