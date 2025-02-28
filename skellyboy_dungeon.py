@@ -172,7 +172,8 @@ def walk_mobs(mob_list, player_coords, no_walk_list, mob_delayer):
                     mob_y = mob_y + (one_tile / 2)
                     mob['y_movement'] = 'y_plus'
                     mob['facing'] = 'front'
-                if [full_x, full_y] != [player_coords[player][0], player_coords[player][1]] and [full_x, full_y] not in no_walk_list:
+#                 if [full_x, full_y] != [player_coords[player][0], player_coords[player][1]] and [full_x, full_y] not in no_walk_list:
+                if [full_x, full_y] not in no_walk_list + list(player_coords.values()):
                     if mob['coords'] in no_walk_list:
                         no_walk_list.pop(no_walk_list.index(mob['coords']))
                     mob['coords'] = [mob_x, mob_y]
